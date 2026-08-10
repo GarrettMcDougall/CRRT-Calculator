@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CRRT calc.js — test suite</title>
+<style>
+  body { font-family: ui-monospace, "IBM Plex Mono", monospace; background: #12161A; color: #E8E4DC; padding: 2rem; }
+  .pass { color: #3FB8AF; }
+  .fail { color: #E5533D; font-weight: bold; }
+  .case { margin-bottom: 0.6rem; padding: 0.5rem 0.8rem; border-left: 3px solid #333; }
+  .case.fail-case { border-left-color: #E5533D; background: #1B2127; }
+  h1 { font-size: 1.1rem; }
+  #summary { font-size: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #333; }
+</style>
+</head>
+<body>
+<h1>CRRT calc.js — worked example test suite (spec §7)</h1>
+<div id="results"></div>
+<div id="summary"></div>
+
+<script src="../js/calc.js"></script>
+<script>
+(function () {
+  const C = window.CRRTCalc;
+  const results = [];
+  let pass = 0, fail = 0;
+
+  function approx(actual, expected, tol) {
+    return Math.abs(actual - expected) <= tol;
+  }
+
+  function check(label, actual, expected, tol = 0.1) {
+    const ok = approx(actual, expected, tol);
+    if (ok) pass++; else fail++;
+    results.push({ label, actual, expected, ok });
+  }
+
+  // --- A: Dose and filtration fraction ---
+  // 80 kg, Hct 0.30, CVVHDF, Qb 150, Qd 1500, post 500, netUF 100, no pre-dilution, uptime 1.0
+  const A = C.computeDoseAndFF({
+    weightKg: 80,
+    hematocrit: 0.30,
+    bloodFlow_mL_min: 150,
+    dialysateFlow_mL_hr: 1500,
+    replacementPre_mL_hr: 0,
+    replacementPost_mL_hr: 500,
+    netUltrafiltration_mL_hr: 100,
+    citrateFlow_mL_hr: 0,
+    uptimeFraction: 1.0,
+  });
+  check('A: effluent rate = 2100 mL/hr', A.effluentRate_mL_hr, 2100, 0.01);
+  check('A: prescribed dose = 26.25 mL/kg/hr', A.prescribedDose_mL_kg_hr, 26.25, 0.01);
+  check('A: plasma flow = 6300 mL/hr', A.plasmaFlow_mL_hr, 6300, 0.01);
+  check('A: FF = 0.0952 (9.5%)', A.filtrationFraction, 0.0952, 0.001);
+  check('A: FF flag = green', A.ffFlag === 'green' ? 1 : 0, 1, 0);
+
+  // --- B: Downtime ---
+  const B = C.computeDoseAndFF({
+    weightKg: 80,
+    hematocrit: 0.30,
+    bloodFlow_mL_min: 150,
+    dialysateFlow_mL_hr: 1500,
+    replacementPre_mL_hr: 0,
+    replacementPost_mL_hr: 500,
+    netUltrafiltration_mL_hr: 100,
+    citrateFlow_mL_hr: 0,
+    uptimeFraction: 0.90,
+  });
+  check('B: delivered dose = 23.6 mL/kg/hr (uptime 0.90)', B.deliveredDose_mL_kg_hr, 23.6, 0.05);
+
+  // --- C: Pre-dilution correction ---
+  // Same as A but 500 mL/hr replacement moved to pre-filter
+  const Cx = C.computeDoseAndFF({
+    weightKg: 80,
+    hematocrit: 0.30,
+    bloodFlow_mL_min: 150,
+    dialysateFlow_mL_hr: 1500,
+    replacementPre_mL_hr: 500,
+    replacementPost_mL_hr: 0,
+    netUltrafiltration_mL_hr: 100,
+    citrateFlow_mL_hr: 0,
+    uptimeFraction: 1.0,
+  });
+  check('C: effluent still 2100 mL/hr', Cx.effluentRate_mL_hr, 2100, 0.01);
+  check('C: prescribed still 26.25 mL/kg/hr', Cx.prescribedDose_mL_kg_hr, 26.25, 0.01);
+  check('C: plasma water flow = 5859 mL/hr', Cx.plasmaWaterFlow_mL_hr, 5859, 1);
+  check('C: dilution factor = 0.9214', Cx.dilutionFactor, 0.9214, 0.001);
+  check('C: corrected dose = 24.2 mL/kg/hr', Cx.correctedDose_mL_kg_hr, 24.2, 0.1);
+  check('C: FF = 0.0147 (1.5%)', Cx.filtrationFraction, 0.0147, 0.001);
+
+  // --- D: Citrate, concentrated ACD-A ---
+  const D = C.citrateFlowFromTargetDose({
+    bloodFlow_mL_min: 150,
+    targetCitrateDose_mmol_L: 3.0,
+    citrateConcentration_mmol_L: 113,
+  });
+  check('D: ACD-A citrate flow = 238.9 mL/hr', D.citrateFlow_mL_hr, 238.9, 0.5);
+
+  // --- E: Citrate, dilute pre-filter (Prismocitrate 18/0) ---
+  const E = C.citrateFlowFromTargetDose({
+    bloodFlow_mL_min: 150,
+    targetCitrateDose_mmol_L: 3.0,
+    citrateConcentration_mmol_L: 18,
+  });
+  check('E: Prismocitrate flow = 1500 mL/hr', E.citrateFlow_mL_hr, 1500, 0.5);
+
+  // E continued: this citrate flow must propagate as pre-dilution fluid
+  // and change dose/FF relative to example A.
+  const Eprop = C.computeDoseAndFF({
+    weightKg: 80,
+    hematocrit: 0.30,
+    bloodFlow_mL_min: 150,
+    dialysateFlow_mL_hr: 1500,
+    replacementPre_mL_hr: 0,
+    replacementPost_mL_hr: 500,
+    netUltrafiltration_mL_hr: 100,
+    citrateFlow_mL_hr: E.citrateFlow_mL_hr,
+    citratePreFilter: true,
+    uptimeFraction: 1.0,
+  });
+  check(
+    'E: citrate flow propagates into effluent (3600 mL/hr, != example A 2100)',
+    Eprop.effluentRate_mL_hr,
+    3600,
+    0.01
+  );
+  check(
+    'E: citrate flow propagates into pre-dilution total',
+    Eprop.citrateAsPreDilution_mL_hr,
+    1500,
+    0.01
+  );
+
+  // --- F: Inverse citrate dose ---
+  const F = C.citrateDoseFromFlow({
+    citrateFlow_mL_hr: 200,
+    citrateConcentration_mmol_L: 113,
+    bloodFlow_mL_min: 180,
+  });
+  check('F: actual citrate dose = 2.09 mmol/L', F.actualCitrateDose_mmol_L, 2.09, 0.02);
+  check('F: dose flag = amber (below target range)', F.doseFlag === 'amber' ? 1 : 0, 1, 0);
+
+  // --- G: Accumulation ---
+  const G = C.citrateAccumulationCheck({ totalCa_mmol_L: 3.0, systemicICa_mmol_L: 1.05 });
+  check('G: Ca ratio = 2.86', G.caRatio, 2.86, 0.01);
+  check('G: accumulation flag = true', G.accumulationFlag ? 1 : 0, 1, 0);
+
+  // --- H: Heparin ---
+  const H = C.computeHeparinDosing({
+    weightKg: 80,
+    bolusUnitsPerKg: 25,
+    infusionUnitsPerKgHr: 7.5,
+    heparinConcentration_units_mL: 100,
+  });
+  check('H: bolus = 2000 units', H.bolusUnits, 2000, 0.01);
+  check('H: infusion = 600 units/hr', H.infusionUnits_hr, 600, 0.01);
+  check('H: infusion rate = 6.0 mL/hr', H.infusionRate_mL_hr, 6.0, 0.01);
+
+  // --- I: Phosphate ---
+  const I = C.estimatePhosphateRemoval({ effluentRate_mL_hr: 2100, serumPO4_mmol_L: 1.0 });
+  check('I: PO4 removal ≈ 50.4 mmol/day', I.po4Removal_mmol_day, 50.4, 0.1);
+
+  // --- J: Sodium gradient ---
+  const J = C.sodiumGradientCheck({ serumNa_mmol_L: 110, solutionNa_mmol_L: 140 });
+  check('J: gradient = 30 mmol/L', J.gradient_mmol_L, 30, 0.01);
+  check('J: flag = true (red)', J.flag ? 1 : 0, 1, 0);
+
+  // --- Acid-base pattern discrimination (§3.2 three-way) ---
+  check(
+    'Acid-base: alkalosis pattern',
+    C.citrateAcidBasePattern({ pH: 7.50, hco3_mmol_L: 30, caRatio: 2.0 }) === 'alkalosis' ? 1 : 0,
+    1, 0
+  );
+  check(
+    'Acid-base: acidosis + normal ratio = under-buffering',
+    C.citrateAcidBasePattern({ pH: 7.28, hco3_mmol_L: 18, caRatio: 2.0 }) === 'acidosis_underbuffering' ? 1 : 0,
+    1, 0
+  );
+  check(
+    'Acid-base: acidosis + high ratio = accumulation',
+    C.citrateAcidBasePattern({ pH: 7.28, hco3_mmol_L: 18, caRatio: 2.9 }) === 'acidosis_accumulation' ? 1 : 0,
+    1, 0
+  );
+
+  // --- Render ---
+  const resultsEl = document.getElementById('results');
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'case' + (r.ok ? '' : ' fail-case');
+    div.innerHTML = `<span class="${r.ok ? 'pass' : 'fail'}">${r.ok ? 'PASS' : 'FAIL'}</span> — ${r.label} ` +
+      `(actual: ${typeof r.actual === 'number' ? r.actual.toFixed(4) : r.actual}, expected: ${r.expected})`;
+    resultsEl.appendChild(div);
+  });
+
+  document.getElementById('summary').innerHTML =
+    `<strong>${pass} passed, ${fail} failed</strong> out of ${pass + fail}`;
+
+  if (fail > 0) {
+    document.getElementById('summary').style.color = '#E5533D';
+  } else {
+    document.getElementById('summary').style.color = '#3FB8AF';
+  }
+})();
+</script>
+</body>
+</html>

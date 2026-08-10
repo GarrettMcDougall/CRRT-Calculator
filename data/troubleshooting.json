@@ -1,0 +1,138 @@
+[
+  {
+    "id": "high-access-negative",
+    "alarm": "High access (arterial) pressure alarm — very negative",
+    "pressurePattern": { "access": "very negative (e.g. below -250 mmHg)", "filter": "normal or low", "return": "normal", "TMP": "normal" },
+    "localises": "Inflow problem — the pump can't pull blood in fast enough.",
+    "differential": [
+      "Hypovolaemia / inadequate circulating volume",
+      "Catheter malposition or kinking",
+      "Patient position occluding the access lumen (common with femoral lines on hip flexion)",
+      "Access lumen thrombus"
+    ],
+    "firstActions": [
+      "Check and reposition the patient / limb",
+      "Flush or aspirate the access lumen to check patency",
+      "Reassess volume status",
+      "Consider reducing Qb temporarily if access-limited"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "high-return",
+    "alarm": "High return (venous) pressure alarm",
+    "pressurePattern": { "access": "normal", "filter": "normal or high", "return": "high", "TMP": "may be elevated" },
+    "localises": "Outflow obstruction — resistance to blood returning to the patient.",
+    "differential": [
+      "Kink in the venous (return) limb of the circuit",
+      "Clot in the venous limb or drip/deaeration chamber",
+      "Return catheter lumen malposition or thrombus",
+      "Patient position"
+    ],
+    "firstActions": [
+      "Inspect the full return limb for kinks",
+      "Check the deaeration chamber for clot",
+      "Flush/aspirate the return lumen if accessible",
+      "Reposition patient/catheter"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "rising-tmp",
+    "alarm": "Rising transmembrane pressure (TMP)",
+    "pressurePattern": { "access": "normal", "filter": "rising", "return": "normal or rising", "TMP": "progressively rising" },
+    "localises": "Membrane clotting or fouling — the machine is working harder to push fluid across the membrane.",
+    "differential": [
+      "Progressive filter clotting (often with high filtration fraction as the upstream driver)",
+      "Protein/lipid fouling of the membrane over time",
+      "Inadequate anticoagulation for this patient/circuit"
+    ],
+    "firstActions": [
+      "Check filtration fraction — reduce post-filter replacement rate or shift replacement pre-filter",
+      "Increase blood flow if access allows",
+      "Reassess anticoagulation adequacy (post-filter iCa if citrate; aPTT if heparin)",
+      "Anticipate filter change if TMP continues to climb toward the machine's ceiling"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "filter-pressure-drop",
+    "alarm": "Rising pressure drop across the filter (filter pressure minus return pressure widening)",
+    "pressurePattern": { "access": "normal", "filter": "high", "return": "normal or low", "TMP": "elevated" },
+    "localises": "Clot forming within the fibre bundle itself, distinct from a TMP rise driven by fouling.",
+    "differential": [
+      "Fibre bundle clotting",
+      "Under-anticoagulation for this circuit"
+    ],
+    "firstActions": [
+      "Same anticoagulation reassessment as rising TMP",
+      "Prepare for filter change — a widening pressure drop with rising TMP together predict imminent clotting"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "air-detected",
+    "alarm": "Air / bubble detector alarm",
+    "pressurePattern": { "access": "variable", "filter": "variable", "return": "variable", "TMP": "variable" },
+    "localises": "Air has entered the circuit, most commonly pre-pump on the access side (a loose connection or an empty priming bag) or via a cracked line.",
+    "differential": [
+      "Loose or disconnected line connection",
+      "Empty bag upstream of the pump generating negative-pressure air entrainment",
+      "Cracked tubing or connector"
+    ],
+    "firstActions": [
+      "The machine will auto-clamp the return line — do not bypass this",
+      "Inspect all connections systematically from access to return",
+      "Do not resume until the air source is found and cleared"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "blood-leak",
+    "alarm": "Blood leak detector alarm",
+    "pressurePattern": { "access": "variable", "filter": "variable", "return": "variable", "TMP": "may be elevated preceding the leak" },
+    "localises": "Membrane rupture — blood cells crossing into the effluent.",
+    "differential": [
+      "Membrane fibre rupture, often after a period of high TMP",
+      "False positive from haemolysis or pigmenturia"
+    ],
+    "firstActions": [
+      "Do not ignore or override — a true leak requires the circuit to be changed",
+      "Inspect effluent visually for blood tinge",
+      "If confirmed, change the circuit; the blood in the extracorporeal circuit is not returned"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "recirculation",
+    "alarm": "No alarm — delivered dose is lower than expected despite an unremarkable-looking prescription",
+    "pressurePattern": { "access": "normal", "filter": "normal", "return": "normal", "TMP": "normal" },
+    "localises": "Return blood is being pulled back into the access lumen instead of reaching systemic circulation — silent, no alarm fires.",
+    "differential": [
+      "Short or malpositioned catheter (classically a short femoral line)",
+      "Catheter tip abutting a vessel wall",
+      "Access and return lumens too close together for the catheter's design"
+    ],
+    "firstActions": [
+      "Suspect this when labs don't track with the prescribed dose despite a technically normal-looking circuit",
+      "Consider catheter reposition or exchange for a longer/better-positioned line",
+      "This is why the guided builder emphasises catheter length and site (see Learn → step 3)"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "downtime-accounting",
+    "alarm": "Not an alarm — a planning concept",
+    "pressurePattern": null,
+    "localises": "Circuit downtime (filter changes, transport, line issues) reduces delivered dose even when nothing is technically wrong.",
+    "differential": [
+      "Three 40-minute circuit changes in a day ≈ 120 minutes ≈ 8.3% of the day",
+      "A 25 mL/kg/hr prescription at 91.7% uptime delivers roughly 23 mL/kg/hr — before any other loss"
+    ],
+    "firstActions": [
+      "Prescribe above target (25–30 mL/kg/hr) to absorb expected downtime and still land at 20–25 delivered",
+      "Track uptime, not just the prescribed number, when reviewing whether dose targets are being met"
+    ],
+    "reviewed": false
+  }
+]

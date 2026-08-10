@@ -1,0 +1,152 @@
+[
+  {
+    "id": "transport",
+    "title": "Solute transport",
+    "reviewed": false,
+    "body": [
+      "CRRT clears solutes two ways. Diffusion moves solute down a concentration gradient across the membrane, driven by countercurrent dialysate flow (CVVHD). It's efficient for small solutes — urea, creatinine, potassium — because they diffuse fast, but inefficient for larger molecules that diffuse slowly.",
+      "Convection moves solute by solvent drag: a pressure gradient pushes plasma water across the membrane, and dissolved solutes go with it regardless of size, up to the membrane's sieving coefficient (the fraction of a solute that crosses relative to plasma concentration — 1.0 means it crosses freely, 0 means it's fully retained). This is CVVH, driven by replacement fluid volume rather than dialysate flow. Convection clears middle molecules (cytokines, some antibiotics) more effectively than diffusion in theory.",
+      "CVVHDF combines both: dialysate flow for small-solute diffusion plus replacement fluid for convective middle-molecule clearance. Membrane pore size and surface area set the ceiling for both modes; the sieving coefficient is what actually determines whether a specific drug or toxin will come off."
+    ],
+    "highYield": [
+      "Diffusion = concentration gradient, best for small solutes, driven by dialysate flow.",
+      "Convection = pressure gradient (solvent drag), better middle-molecule clearance, driven by replacement fluid.",
+      "Sieving coefficient (0–1) is what actually predicts whether convection clears a specific molecule."
+    ]
+  },
+  {
+    "id": "dose",
+    "title": "Dose and adequacy",
+    "reviewed": false,
+    "body": [
+      "Effluent volume (dialysate + replacement fluid + net ultrafiltration, per kg per hour) is the standard clearance surrogate — it's easy to measure and roughly tracks small-solute clearance, even though it's an imperfect proxy for what actually matters (patient outcomes).",
+      "Three numbers matter and they are not the same: the prescribed dose (what you dial in), the pre-dilution-corrected dose (lower than prescribed, because pre-filter fluid dilutes the blood before it reaches the membrane and reduces effective clearance), and the delivered dose (lower again, because circuit downtime — clotting, line changes, transport — cuts into actual treatment hours). A prescription of 25 mL/kg/hr routinely delivers 20–22 mL/kg/hr once downtime is accounted for.",
+      "Two major trials tested whether more is better: RENAL (Australia/NZ, CVVHDF) compared 40 vs 25 mL/kg/hr and found no mortality difference. ATN (US, mixed modality) compared an intensive vs less-intensive strategy with the same result. KDIGO's 2012 guideline, still the reference standard, recommends 20–25 mL/kg/hr delivered — meaning you generally prescribe higher to land there after downtime."
+    ],
+    "highYield": [
+      "Effluent volume/kg/hr is the clearance surrogate; it is not the same as prescribed, corrected, or delivered dose.",
+      "RENAL and ATN: no benefit from higher-intensity CRRT beyond ~25 mL/kg/hr.",
+      "KDIGO target is 20–25 mL/kg/hr delivered — prescribe 25–30 to absorb downtime."
+    ]
+  },
+  {
+    "id": "timing",
+    "title": "Timing of initiation",
+    "reviewed": false,
+    "body": [
+      "For years the assumption was that earlier CRRT initiation, before absolute indications developed, would improve outcomes by preventing the downstream consequences of uncorrected AKI. The trial evidence has moved the other way.",
+      "ELAIN (single-centre, surgical/septic ICU) found a mortality benefit to early initiation, but AKIKI (multicentre, French ICUs) and IDEAL-ICU (septic shock) found no benefit to early strategies, and the largest and most recent trial, STARRT-AKI (multinational, >3000 patients), found no benefit to accelerated initiation and a signal of harm: more dialysis dependence at 90 days in the accelerated arm, plausibly because patients who might have recovered renal function on their own were started on CRRT before that chance played out.",
+      "The current default is watchful waiting with explicit trigger criteria — refractory hyperkalaemia, severe acidosis, diuretic-refractory volume overload, uraemic complications (encephalopathy, pericarditis, bleeding), or certain intoxications — rather than initiating on a lab number or AKI stage alone."
+    ],
+    "highYield": [
+      "STARRT-AKI (the largest, most recent trial): no benefit from accelerated initiation, more dialysis dependence at 90 days.",
+      "AKIKI and IDEAL-ICU echo this; ELAIN was the outlier showing benefit.",
+      "Default: watchful waiting with clear trigger criteria, not initiation by AKI stage alone."
+    ]
+  },
+  {
+    "id": "modality",
+    "title": "Modality selection",
+    "reviewed": false,
+    "body": [
+      "CVVH (pure convection), CVVHD (pure diffusion), CVVHDF (both), and SCUF (fluid removal only, no significant solute clearance — used when the only goal is volume removal in a euvolaemic-to-hypervolaemic, metabolically stable patient) are the four configurations you'll select between.",
+      "No trial has shown a mortality difference between CVVH, CVVHD, and CVVHDF. The choice is practical rather than outcome-driven: CVVH at high post-dilution replacement rates gives good convective clearance but costs filter life faster (higher filtration fraction, more haemoconcentration at the filter). CVVHD is gentler on the filter for a given dose. CVVHDF splits the difference and is what most units run by default.",
+      "Solution cost and availability also matter in practice — dialysate and replacement fluid volumes at 25–30 mL/kg/hr add up to tens of litres a day."
+    ],
+    "highYield": [
+      "No mortality difference between CVVH, CVVHD, CVVHDF, SCUF — choice is practical, not outcome-driven.",
+      "SCUF = fluid removal only, no meaningful solute clearance.",
+      "High-rate post-dilution CVVH clears middle molecules well but shortens filter life."
+    ]
+  },
+  {
+    "id": "circuit",
+    "title": "The circuit",
+    "reviewed": false,
+    "body": [
+      "Blood leaves the patient through the access lumen, is pulled by the blood pump (Qb) toward the filter, and may have pre-filter fluid (replacement fluid or dilute citrate) added just before the filter. Inside the filter (haemofilter), diffusion and/or convection happen across the membrane; effluent (spent dialysate plus ultrafiltrate) leaves via the effluent pump. Post-filter, replacement fluid may be added before blood returns to the patient through the return lumen, passing through an air/bubble trap (deaeration chamber) on the way.",
+      "Four pressures are measured continuously and each interrogates a different part of the circuit: access pressure (how easily blood is being pulled in — very negative suggests poor inflow), filter pressure (pressure into the filter), effluent pressure, and return pressure (resistance to blood going back to the patient — high suggests outflow obstruction). Transmembrane pressure (TMP) is derived from filter and effluent pressures and reflects how hard the machine is working to push fluid across the membrane — it rises as the membrane clots or fouls.",
+      "Recirculation — return blood being pulled straight back into the access lumen rather than reaching systemic circulation — happens with poorly positioned or too-short catheters (classically a short femoral line) and silently reduces delivered dose without any alarm firing."
+    ],
+    "highYield": [
+      "Four pressures: access, filter, effluent, return — each localises a different problem.",
+      "TMP rises as the membrane clots or fouls; it's a filter-life leading indicator.",
+      "Recirculation silently reduces dose with no alarm — think of it with short/malpositioned catheters."
+    ]
+  },
+  {
+    "id": "anticoagulation",
+    "title": "Anticoagulation overview",
+    "reviewed": false,
+    "body": [
+      "The extracorporeal circuit clots because blood contacts a foreign, thrombogenic surface (contact activation of the intrinsic pathway), meets an air-blood interface in the deaeration chamber, and slows or stagnates in areas of turbulence or low flow — worse with a high filtration fraction concentrating cells and proteins at the filter.",
+      "Regional citrate anticoagulation confines anticoagulation to the circuit (chelating calcium pre-filter, replacing it systemically) and, in head-to-head trials and meta-analyses, extends filter life and reduces bleeding compared with systemic heparin. KDIGO now recommends citrate as first-line for patients without a specific contraindication (severe liver failure, inability to metabolise citrate load).",
+      "Systemic heparin remains reasonable where citrate is unavailable, where the learning curve or monitoring infrastructure isn't in place, or in patients where citrate metabolism is a concern. A no-anticoagulation strategy — higher blood flow, pre-dilution, minimising circuit interruptions — is the right default in active bleeding or a high bleeding risk, accepting shorter filter life as the trade-off."
+    ],
+    "highYield": [
+      "Circuit clots from contact activation, the air-blood interface, and stasis/haemoconcentration.",
+      "Citrate: longer filter life, less bleeding than heparin; KDIGO first-line without contraindication.",
+      "No anticoagulation is the right default with active bleeding — accept shorter filter life."
+    ]
+  },
+  {
+    "id": "citrate",
+    "title": "Citrate physiology",
+    "reviewed": false,
+    "body": [
+      "Citrate chelates ionised calcium, which is required for the coagulation cascade — so pre-filter citrate infusion drops the ionised calcium in the circuit to a range where clotting can't proceed (target post-filter iCa 0.25–0.35 mmol/L), while a separate systemic calcium infusion, given back to the patient after the filter, restores normal systemic ionised calcium (target 1.10–1.30 mmol/L).",
+      "The citrate-calcium complex is cleared partly into the effluent and partly returned to the patient, where it's metabolised — mostly hepatic, with muscle and renal contributions — via the Krebs cycle. Each mmol of citrate metabolised regenerates 3 mmol of bicarbonate, which is why citrate anticoagulation is also a systemic buffer source, not just an anticoagulant.",
+      "This creates three distinguishable acid-base pictures: too much citrate relative to clearance/metabolism produces metabolic alkalosis (excess bicarbonate regeneration); too little citrate or buffer produces metabolic acidosis with a normal calcium ratio (simple under-buffering); and impaired citrate metabolism — liver failure, profound shock — produces metabolic acidosis with a rising total-to-ionised calcium ratio, because unmetabolised citrate-calcium complex accumulates rather than being broken down. The last picture is citrate accumulation, and it needs a different fix (reduce or stop citrate) than under-buffering (increase buffer)."
+    ],
+    "highYield": [
+      "1 mmol citrate metabolised → 3 mmol bicarbonate: citrate is a buffer source, not just an anticoagulant.",
+      "Post-filter iCa 0.25–0.35 (circuit anticoagulation); systemic iCa 1.10–1.30 (patient).",
+      "Total:ionised Ca ratio > 2.5 = accumulation — a metabolism failure, treated by reducing citrate, not adding buffer."
+    ]
+  },
+  {
+    "id": "fluid",
+    "title": "Fluid management",
+    "reviewed": false,
+    "body": [
+      "Net ultrafiltration (net UF) is the fluid that actually leaves the patient per hour — the number that matters for the patient's fluid balance. Total ultrafiltration is net UF plus post-dilution replacement volume — the volume that actually crosses the membrane, which matters for filtration fraction and filter stress, but is not the same as what the patient loses.",
+      "Faster net UF removes fluid faster but at the cost of intravascular refill time — pull faster than plasma refills from the interstitium and you get haemodynamic instability. Observational data associate high net UF rates with mortality, though this is confounded (sicker patients tolerate less UF and also do worse).",
+      "The practical approach is to match the net UF rate to what the patient's haemodynamics can tolerate at that moment — reassessed frequently — rather than fixing a rate to hit a 24-hour fluid balance target regardless of trend."
+    ],
+    "highYield": [
+      "Net UF = what leaves the patient; total UF = what crosses the membrane (net UF + post-dilution replacement). Not the same number.",
+      "Faster net UF risks outpacing plasma refill → hypotension.",
+      "Titrate net UF to haemodynamic tolerance in real time, not to a fixed 24-hour target."
+    ]
+  },
+  {
+    "id": "complications",
+    "title": "Complications",
+    "reviewed": false,
+    "body": [
+      "Hypophosphataemia is near-universal after 24–48 hours of CRRT at conventional dose, because phosphate is small and freely filtered/dialysed — expect it and either use a phosphate-containing solution or replace separately, monitoring at least daily (more often in the first 48 hours or at high dose).",
+      "Hypomagnesaemia is common too, more so with citrate (citrate chelates magnesium as well as calcium, to a lesser degree). Hypothermia is expected from large volumes of room-temperature or refrigerated fluid crossing an external circuit — most machines have an in-line warmer, but core temperature should still be tracked.",
+      "CRRT clears many renally-cleared drugs — antimicrobials especially — at rates that don't match standard renal dosing tables, which are built for stable CKD, not a 20–30 mL/kg/hr extracorporeal circuit; dosing needs a pharmacist or a CRRT-specific reference, not extrapolation. Watch also for catheter complications (malposition, thrombosis, infection), bleeding (anticoagulation-related or otherwise), filter membrane reactions (rare, but consider with a new bioincompatible-membrane exposure), and dextrose/glucose effects from citrate- or lactate-buffered solutions."
+    ],
+    "highYield": [
+      "Hypophosphataemia is expected by 24–48h — monitor proactively, don't wait for a low value to react.",
+      "Hypomagnesaemia is worse with citrate.",
+      "Standard renal drug-dosing tables don't apply to CRRT clearance — use a CRRT-specific reference."
+    ]
+  },
+  {
+    "id": "order-anatomy",
+    "title": "Prescription anatomy",
+    "reviewed": false,
+    "body": [
+      "A complete CRRT order specifies, at minimum: modality (CVVH/CVVHD/CVVHDF/SCUF); blood flow rate; dialysate rate, pre- and post-dilution replacement rates as applicable; net ultrafiltration/fluid removal target; anticoagulation modality and its full sub-prescription (citrate dose and calcium replacement, or heparin bolus and infusion, or none); solution composition (potassium, calcium, bicarbonate, phosphate content of the chosen bags); and a monitoring/lab schedule.",
+      "Most fields are physician-prescribed at initiation, but many units run bedside nursing titration within physician-approved parameters — most commonly the calcium infusion rate (against post-filter and systemic iCa), the heparin infusion rate (against aPTT), and sometimes net UF rate (against haemodynamics) — via a standing-order nomogram rather than a call for every change.",
+      "Knowing which fields are yours to set at initiation, and which are handed to a nomogram for the bedside team to titrate, is part of writing a safe and workable order — a prescription with no titration parameters generates a page for every lab value, and one with no physician-set boundaries removes the safety margin the nomogram was supposed to protect."
+    ],
+    "highYield": [
+      "A complete order = modality, flows, UF target, full anticoagulation sub-prescription, solution composition, monitoring schedule.",
+      "Calcium rate, heparin rate, and often net UF are commonly nurse-titrated within physician-set nomogram bounds.",
+      "Write titration parameters into the order, not just a starting point — that's what makes it workable at 03:00."
+    ]
+  }
+]

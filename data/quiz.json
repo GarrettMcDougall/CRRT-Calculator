@@ -1,0 +1,127 @@
+[
+  { "id": "q1", "topic": "dose", "difficulty": "easy", "question": "What did the RENAL and ATN trials conclude about CRRT dose intensity?", "options": [
+      { "text": "Higher intensity (e.g. 40 mL/kg/hr) improved mortality over standard dose.", "correct": false, "explain": "Both trials found no mortality benefit from higher intensity — this is the opposite of what was found." },
+      { "text": "No mortality benefit from higher-intensity dosing beyond ~25 mL/kg/hr.", "correct": true, "explain": "Correct — this is why KDIGO's target sits at 20–25 mL/kg/hr delivered rather than higher." },
+      { "text": "Lower doses caused more bleeding complications.", "correct": false, "explain": "Neither trial's primary finding was about bleeding — the key result was the absence of a mortality benefit from higher dose." }
+    ] },
+  { "id": "q2", "topic": "dose", "difficulty": "medium", "question": "A CRRT prescription is written for 25 mL/kg/hr. Three 40-minute circuit changes occur over 24 hours. Approximately what delivered dose results, dose otherwise unchanged?", "options": [
+      { "text": "≈ 25 mL/kg/hr — downtime doesn't affect delivered dose.", "correct": false, "explain": "Downtime directly reduces delivered dose — the machine isn't running during a circuit change." },
+      { "text": "≈ 23 mL/kg/hr — about 8% of the day lost to downtime.", "correct": true, "explain": "Correct — 120 minutes of 1440 is ~8.3% downtime, so delivered dose is roughly 91.7% of prescribed." },
+      { "text": "≈ 15 mL/kg/hr — downtime roughly halves delivered dose.", "correct": false, "explain": "This overstates the effect — three 40-minute changes is a meaningful but not massive fraction of the day." }
+    ] },
+  { "id": "q3", "topic": "timing", "difficulty": "medium", "question": "What did STARRT-AKI find regarding accelerated CRRT initiation?", "options": [
+      { "text": "Accelerated initiation improved 90-day survival.", "correct": false, "explain": "STARRT-AKI found no survival benefit — this reverses the actual finding." },
+      { "text": "No benefit, with more dialysis dependence at 90 days in the accelerated arm.", "correct": true, "explain": "Correct — this is the key finding driving the current watchful-waiting default." },
+      { "text": "Accelerated initiation reduced filter clotting rates.", "correct": false, "explain": "STARRT-AKI's key outcomes were mortality and dialysis dependence, not filter clotting." }
+    ] },
+  { "id": "q4", "topic": "transport", "difficulty": "easy", "question": "Which best describes convective clearance?", "options": [
+      { "text": "Solute moves down a concentration gradient across the membrane.", "correct": false, "explain": "That's diffusion, not convection." },
+      { "text": "Solute is dragged across the membrane along with plasma water by a pressure gradient.", "correct": true, "explain": "Correct — solvent drag, limited by the sieving coefficient." },
+      { "text": "Solute is actively pumped across the membrane by the machine.", "correct": false, "explain": "There's no active transport step — convection is passive, driven by pressure and solvent drag." }
+    ] },
+  { "id": "q5", "topic": "circuit", "difficulty": "easy", "question": "A very negative access pressure alarm most likely reflects:", "options": [
+      { "text": "Outflow obstruction on the return side.", "correct": false, "explain": "That would show as high return pressure, not negative access pressure." },
+      { "text": "Inadequate inflow — the pump can't pull blood in fast enough.", "correct": true, "explain": "Correct — access pressure reflects how easily blood is being drawn in." },
+      { "text": "Membrane fouling.", "correct": false, "explain": "Membrane fouling shows up as rising TMP/filter pressure, not access pressure." }
+    ] },
+  { "id": "q6", "topic": "citrate", "difficulty": "medium", "question": "Post-filter ionised calcium is 0.22 mmol/L (below target 0.25–0.35), systemic ionised calcium is 1.18 mmol/L (in target). What's the correct adjustment?", "options": [
+      { "text": "Increase the systemic calcium infusion.", "correct": false, "explain": "Systemic iCa is already in range — increasing the calcium infusion isn't the fix for a post-filter number." },
+      { "text": "Reduce the citrate dose slightly.", "correct": true, "explain": "Correct — post-filter iCa below target means more circuit anticoagulation than needed; this is titrated by citrate dose." },
+      { "text": "Increase the citrate dose.", "correct": false, "explain": "That would push post-filter iCa even lower — the opposite of the needed correction." }
+    ] },
+  { "id": "q7", "topic": "citrate", "difficulty": "hard", "question": "A citrate patient develops metabolic alkalosis. What's the most likely explanation and fix?", "options": [
+      { "text": "Under-buffering — increase dialysate bicarbonate.", "correct": false, "explain": "Under-buffering causes acidosis, not alkalosis." },
+      { "text": "Excess citrate delivery relative to clearance/metabolism — reduce citrate dose, increase effluent, or reduce dialysate bicarbonate.", "correct": true, "explain": "Correct — each mmol of citrate metabolised yields 3 mmol bicarbonate, so excess delivery drives alkalosis." },
+      { "text": "Citrate accumulation — stop citrate immediately.", "correct": false, "explain": "Accumulation classically presents with acidosis and a high Ca ratio, not alkalosis." }
+    ] },
+  { "id": "q8", "topic": "citrate", "difficulty": "hard", "question": "Total calcium 3.1 mmol/L, systemic ionised calcium 1.0 mmol/L. What is the ratio and what does it suggest?", "options": [
+      { "text": "Ratio 3.1 — within normal limits.", "correct": false, "explain": "3.1 is well above the 2.5 accumulation threshold, not normal." },
+      { "text": "Ratio 3.1 — suggests citrate accumulation.", "correct": true, "explain": "Correct — 3.1/1.0 = 3.1, above the 2.5 threshold, consistent with accumulation, especially with impaired citrate metabolism." },
+      { "text": "This ratio can't be interpreted without a lactate level.", "correct": false, "explain": "The total:ionised calcium ratio is interpretable on its own; lactate supports the overall picture but isn't required to flag the ratio." }
+    ] },
+  { "id": "q9", "topic": "anticoagulation", "difficulty": "easy", "question": "Which patient is the clearest candidate for a no-anticoagulation CRRT strategy?", "options": [
+      { "text": "A patient with active, worsening surgical bleeding.", "correct": true, "explain": "Correct — active bleeding is the clearest indication to avoid additional anticoagulation." },
+      { "text": "A patient with septic AKI and no bleeding risk.", "correct": false, "explain": "This patient has no contraindication to citrate, which would usually be preferred over no anticoagulation." },
+      { "text": "A patient with a therapeutic aPTT already on heparin for another indication.", "correct": false, "explain": "This patient may not need separate CRRT anticoagulation at all, but that's a different scenario from a deliberate no-anticoagulation strategy for bleeding risk." }
+    ] },
+  { "id": "q10", "topic": "anticoagulation", "difficulty": "medium", "question": "Per KDIGO, which anticoagulation approach is preferred as default when there is no contraindication?", "options": [
+      { "text": "Systemic heparin.", "correct": false, "explain": "Heparin remains reasonable but is not the KDIGO-preferred default when citrate is available." },
+      { "text": "Regional citrate anticoagulation.", "correct": true, "explain": "Correct — citrate is now KDIGO's preferred default given longer filter life and less bleeding versus heparin." },
+      { "text": "No anticoagulation.", "correct": false, "explain": "No-anticoagulation is reserved for high bleeding risk, not the general default." }
+    ] },
+  { "id": "q11", "topic": "heparin", "difficulty": "medium", "question": "Platelets fall from 220 to 90 over 4 days on systemic heparin, no other bleeding source. Next step?", "options": [
+      { "text": "Reduce the heparin infusion rate and recheck platelets tomorrow.", "correct": false, "explain": "This delays action on a suspected HIT picture — all heparin exposure should stop, not just be reduced." },
+      { "text": "Stop all heparin exposure (infusion and flushes) and work up HIT.", "correct": true, "explain": "Correct — a >50% platelet fall days into heparin exposure is the classic HIT pattern and warrants stopping all exposure while working it up." },
+      { "text": "No action needed — this fall is expected with CRRT.", "correct": false, "explain": "A >50% fall over days on heparin is not routine CRRT-related thrombocytopenia and needs a HIT work-up." }
+    ] },
+  { "id": "q12", "topic": "fluid", "difficulty": "easy", "question": "Which best describes 'total ultrafiltration'?", "options": [
+      { "text": "The fluid that actually leaves the patient per hour.", "correct": false, "explain": "That's net UF, not total UF." },
+      { "text": "Net UF plus post-dilution replacement volume — what crosses the membrane.", "correct": true, "explain": "Correct — total UF matters for filter stress/FF, not for the patient's fluid balance directly." },
+      { "text": "The dialysate flow rate only.", "correct": false, "explain": "Dialysate flow is a separate component of effluent, not the definition of total UF." }
+    ] },
+  { "id": "q13", "topic": "fluid", "difficulty": "medium", "question": "A patient becomes hypotensive shortly after net UF rate is increased. What's the most likely mechanism?", "options": [
+      { "text": "Net UF outpacing plasma refill from the interstitium.", "correct": true, "explain": "Correct — this is the classic mechanism linking aggressive UF rates to haemodynamic instability." },
+      { "text": "Citrate accumulation.", "correct": false, "explain": "Citrate accumulation presents with acid-base and calcium abnormalities, not acute hypotension tied to a UF rate change." },
+      { "text": "Recirculation.", "correct": false, "explain": "Recirculation reduces delivered dose silently; it doesn't typically cause acute hypotension tied temporally to a UF rate increase." }
+    ] },
+  { "id": "q14", "topic": "complications", "difficulty": "easy", "question": "By what timeframe is hypophosphataemia near-universal on conventional-dose CRRT?", "options": [
+      { "text": "24–48 hours.", "correct": true, "explain": "Correct — phosphate is small and freely cleared, so this should be anticipated, not just reacted to." },
+      { "text": "7–10 days.", "correct": false, "explain": "This underestimates how quickly phosphate falls on CRRT — it happens much sooner." },
+      { "text": "It's rare and doesn't need routine monitoring.", "correct": false, "explain": "It's actually near-universal and needs proactive monitoring, the opposite of rare." }
+    ] },
+  { "id": "q15", "topic": "complications", "difficulty": "medium", "question": "Why can't standard renal drug-dosing tables be used directly for a patient on CRRT?", "options": [
+      { "text": "They're built for stable CKD clearance rates, which don't match a 20–30 mL/kg/hr extracorporeal circuit.", "correct": true, "explain": "Correct — CRRT clearance is a different physiological situation from steady-state CKD, and dosing needs a CRRT-specific reference or pharmacist input." },
+      { "text": "CRRT doesn't clear any drugs, so renal dosing is irrelevant.", "correct": false, "explain": "CRRT does clear many renally-cleared drugs, often substantially — this is the opposite problem." },
+      { "text": "Renal dosing tables are only wrong for antibiotics.", "correct": false, "explain": "The mismatch applies broadly to renally-cleared drugs, not just antibiotics." }
+    ] },
+  { "id": "q16", "topic": "access", "difficulty": "easy", "question": "Which access site is generally preferred for CRRT catheter placement?", "options": [
+      { "text": "Right internal jugular.", "correct": true, "explain": "Correct — shortest, straightest path and lowest recirculation risk of the standard options." },
+      { "text": "Left internal jugular.", "correct": false, "explain": "Left IJ is generally the least preferred of the standard options due to a longer, more curved path." },
+      { "text": "Femoral, always.", "correct": false, "explain": "Femoral is acceptable but not first-line; it also carries more positional flow risk (e.g. with hip flexion)." }
+    ] },
+  { "id": "q17", "topic": "circuit", "difficulty": "medium", "question": "A patient's labs aren't tracking with the prescribed CRRT dose, but no alarms have fired and pressures look normal. What should you suspect?", "options": [
+      { "text": "Recirculation — return blood being pulled back into the access lumen.", "correct": true, "explain": "Correct — recirculation silently reduces delivered dose without triggering a pressure alarm, classically with a short or malpositioned catheter." },
+      { "text": "Citrate accumulation.", "correct": false, "explain": "Accumulation has its own lab signature (rising Ca requirement, falling iCa, high Ca ratio) — it wouldn't present simply as 'dose not tracking' with normal pressures." },
+      { "text": "A calibration error in the machine.", "correct": false, "explain": "While possible in principle, the classic teaching point for this exact presentation is recirculation, not machine calibration." }
+    ] },
+  { "id": "q18", "topic": "modality", "difficulty": "easy", "question": "What is SCUF used for?", "options": [
+      { "text": "Fluid removal only, with no meaningful solute clearance.", "correct": true, "explain": "Correct — SCUF is for isolated ultrafiltration in a metabolically stable, volume-overloaded patient." },
+      { "text": "Maximal solute clearance with minimal fluid removal.", "correct": false, "explain": "This describes something closer to CVVHD at low UF, not SCUF." },
+      { "text": "The default modality for septic AKI.", "correct": false, "explain": "SCUF has no meaningful solute clearance, so it's not appropriate for a patient needing metabolic control." }
+    ] },
+  { "id": "q19", "topic": "modality", "difficulty": "medium", "question": "Which trade-off is most associated with high-rate post-dilution CVVH?", "options": [
+      { "text": "Better middle-molecule clearance at the cost of shorter filter life.", "correct": true, "explain": "Correct — high post-dilution rates raise filtration fraction, promoting haemoconcentration and earlier clotting." },
+      { "text": "Worse solute clearance overall compared to CVVHD.", "correct": false, "explain": "Convective clearance of middle molecules is generally better with CVVH, not worse — the cost is filter life, not clearance." },
+      { "text": "No difference in filter life compared to CVVHD.", "correct": false, "explain": "Filter life is typically shorter with high-rate post-dilution CVVH due to higher filtration fraction." }
+    ] },
+  { "id": "q20", "topic": "electrolytes", "difficulty": "medium", "question": "Serum sodium 112 mmol/L (chronic), standard CRRT solution sodium 140 mmol/L. What's the concern?", "options": [
+      { "text": "The 28 mmol/L gradient risks correcting sodium too fast, with osmotic demyelination risk.", "correct": true, "explain": "Correct — this gradient exceeds the ~10–12 mmol/L caution threshold and needs specific mitigation before starting." },
+      { "text": "No specific concern — CRRT solutions are always safe regardless of starting sodium.", "correct": false, "explain": "This is exactly the scenario that needs specific planning (custom low-sodium solution, D5W, or reduced dose) before starting." },
+      { "text": "The concern is hyperkalaemia, not sodium correction rate.", "correct": false, "explain": "The stated concern in this scenario is the sodium gradient and correction rate, not potassium." }
+    ] },
+  { "id": "q21", "topic": "heparin", "difficulty": "easy", "question": "What is the typical aPTT target range for systemic heparin anticoagulation in CRRT?", "options": [
+      { "text": "45–60 seconds (or ~1.5× baseline).", "correct": true, "explain": "Correct — this is the typical target range, always subject to local protocol." },
+      { "text": "100–120 seconds.", "correct": false, "explain": "This is well above typical target and would carry excess bleeding risk." },
+      { "text": "There is no target — heparin is dosed by weight alone with no monitoring.", "correct": false, "explain": "Heparin infusion requires ongoing aPTT (or anti-Xa) monitoring and titration against a target range." }
+    ] },
+  { "id": "q22", "topic": "dose", "difficulty": "hard", "question": "Why does pre-dilution replacement fluid reduce effective clearance compared to the same volume given post-filter?", "options": [
+      { "text": "It dilutes the blood before it reaches the membrane, lowering the solute concentration available to be cleared.", "correct": true, "explain": "Correct — this is the mechanism behind the pre-dilution correction factor." },
+      { "text": "It doesn't — pre- and post-dilution are clinically identical.", "correct": false, "explain": "They are not identical; pre-dilution measurably reduces effective clearance for the same effluent volume." },
+      { "text": "Pre-dilution fluid bypasses the filter entirely.", "correct": false, "explain": "Pre-dilution fluid does pass through the filter — it just dilutes the blood before it gets there, rather than bypassing it." }
+    ] },
+  { "id": "q23", "topic": "circuit", "difficulty": "medium", "question": "Rising TMP with a normal access pressure most directly reflects:", "options": [
+      { "text": "The membrane is clotting or fouling, requiring more pressure to push fluid across.", "correct": true, "explain": "Correct — TMP is derived from filter and effluent pressures and is a filter-life leading indicator." },
+      { "text": "Inadequate blood pump flow.", "correct": false, "explain": "That would more likely show as an access pressure abnormality, not primarily a TMP rise." },
+      { "text": "Air in the circuit.", "correct": false, "explain": "Air entry triggers a dedicated air/bubble alarm, not a gradual TMP rise." }
+    ] },
+  { "id": "q24", "topic": "citrate", "difficulty": "medium", "question": "Which product provides the most elemental calcium per mL?", "options": [
+      { "text": "Calcium chloride 10% (0.68 mmol/mL).", "correct": true, "explain": "Correct — CaCl2 10% delivers roughly 3x the elemental calcium per mL of calcium gluconate 10%, but is more irritant and better given centrally." },
+      { "text": "Calcium gluconate 10% (0.22 mmol/mL).", "correct": false, "explain": "Gluconate has less elemental calcium per mL than chloride, though it's gentler for peripheral administration." },
+      { "text": "They provide identical elemental calcium per mL.", "correct": false, "explain": "They differ substantially — roughly 0.68 vs 0.22 mmol/mL." }
+    ] },
+  { "id": "q25", "topic": "order-anatomy", "difficulty": "easy", "question": "Which parameter is most commonly titrated by bedside nursing within a physician-approved nomogram, rather than requiring a new physician order for every change?", "options": [
+      { "text": "The calcium infusion rate, titrated against post-filter and systemic ionised calcium.", "correct": true, "explain": "Correct — this is one of the classic nurse-titrated parameters within physician-set bounds, alongside heparin rate against aPTT." },
+      { "text": "The choice of modality (CVVH vs CVVHD vs CVVHDF).", "correct": false, "explain": "Modality selection is a physician-level decision at initiation, not a bedside titration parameter." },
+      { "text": "The decision to start CRRT in the first place.", "correct": false, "explain": "Initiation is a physician decision, not something titrated by nomogram." }
+    ] }
+]

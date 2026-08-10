@@ -1,0 +1,62 @@
+:root {
+  /* Palette — instrument panel */
+  --ground: #12161A;
+  --panel: #1B2127;
+  --panel-raised: #222A31;
+  --bone: #E8E4DC;
+  --muted: #8A939C;
+  --hairline: #2B333B;
+
+  --citrate: #3FB8AF;
+  --citrate-dim: #2A3F3D;
+  --heparin: #D89A3C;
+  --heparin-dim: #3A331F;
+  --alarm: #E5533D;
+  --alarm-dim: #3A2420;
+  --amber: #D8A83C;
+  --amber-dim: #3A331F;
+  --green: #5FBF7A;
+
+  /* Type */
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --fs-h1: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem);
+  --fs-h2: clamp(1.15rem, 1rem + 0.6vw, 1.5rem);
+  --fs-h3: 1.05rem;
+  --fs-body: 0.95rem;
+  --fs-small: 0.8rem;
+  --fs-data: 1.1rem;
+
+  /* Spacing */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.85rem;
+  --sp-4: 1.25rem;
+  --sp-5: 2rem;
+  --sp-6: 3rem;
+
+  --radius: 6px;
+  --radius-sm: 3px;
+
+  --transition-fast: 150ms ease;
+}
+
+/* Light "print / round" mode */
+[data-theme="light"] {
+  --ground: #F3F2EF;
+  --panel: #FFFFFF;
+  --panel-raised: #FAFAF8;
+  --bone: #1B2127;
+  --muted: #5A6570;
+  --hairline: #D8D8D4;
+  --citrate-dim: #DCF2F0;
+  --heparin-dim: #F7E9D2;
+  --alarm-dim: #FBDFDA;
+  --amber-dim: #F7EAD2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --transition-fast: 0ms; }
+}

@@ -1,0 +1,214 @@
+[
+  {
+    "id": "case-1-septic-aki",
+    "title": "Septic AKI, oliguric, K+ 6.8",
+    "tag": "citrate",
+    "stem": "68-year-old, septic shock from a urinary source, on norepinephrine 0.15 mcg/kg/min. Anuric for 8 hours. K+ 6.8 on repeat gas despite calcium gluconate, insulin/dextrose, and salbutamol. No history of liver disease. Platelets 190, INR 1.2, no active bleeding.",
+    "steps": [
+      {
+        "prompt": "Is CRRT indicated now?",
+        "options": [
+          { "text": "Yes — refractory hyperkalaemia despite medical therapy is an absolute trigger.", "correct": true, "feedback": "Correct. This is exactly the trigger-based indication the timing trials support: treat the actual complication, not the AKI stage alone." },
+          { "text": "Wait — give more time for medical management to work.", "correct": false, "feedback": "K+ 6.8 refractory to first-line medical therapy in an anuric patient is not a 'wait and see' picture — this is a trigger to act now." }
+        ]
+      },
+      {
+        "prompt": "Which anticoagulation approach fits this patient?",
+        "options": [
+          { "text": "Regional citrate — no liver failure, no major bleeding risk, and it's the KDIGO-preferred default.", "correct": true, "feedback": "Correct. No contraindication to citrate here, and it offers longer filter life with less bleeding risk than heparin." },
+          { "text": "Systemic heparin as first choice.", "correct": false, "feedback": "Not wrong in absolute terms, but citrate is preferred when there's no contraindication — and there isn't one here." }
+        ]
+      },
+      {
+        "prompt": "Post-filter ionised calcium comes back at 0.22 mmol/L, systemic iCa 1.15. What do you do?",
+        "options": [
+          { "text": "Post-filter iCa is below target (0.25–0.35) — reduce the citrate dose slightly.", "correct": true, "feedback": "Correct. Below-target post-filter iCa means more anticoagulation than needed for the circuit; systemic iCa is fine, so this is a citrate-dose adjustment, not a calcium-infusion adjustment." },
+          { "text": "Increase the systemic calcium infusion.", "correct": false, "feedback": "Systemic iCa is already in range (1.10–1.30) — the number that's out of range is the post-filter value, which is titrated by adjusting citrate dose, not calcium infusion." }
+        ]
+      }
+    ],
+    "debrief": "Straightforward RCA initiation: a clean trigger (refractory hyperkalaemia), no citrate contraindication, and titration driven by keeping post-filter and systemic calcium in their separate target ranges — two different numbers, two different knobs."
+  },
+  {
+    "id": "case-2-alf-accumulation",
+    "title": "Acute liver failure with shock",
+    "tag": "citrate",
+    "stem": "34-year-old with acetaminophen-induced acute liver failure, INR 4.5, lactate 9, MAP maintained on norepinephrine and vasopressin. CRRT started on citrate for volume and metabolic control 6 hours ago.",
+    "steps": [
+      {
+        "prompt": "Six hours in: total calcium 2.9 mmol/L, systemic iCa 0.95 mmol/L, calcium infusion has been increased twice to keep up. What's the calcium ratio and what does it suggest?",
+        "options": [
+          { "text": "Ratio ≈ 3.05 — this pattern (rising Ca requirement, falling iCa despite escalation) suggests citrate accumulation.", "correct": true, "feedback": "Correct. In severe liver failure with shock, citrate metabolism can't keep pace with delivery — exactly the population this complication targets." },
+          { "text": "This is expected titration and not concerning on its own.", "correct": false, "feedback": "A rising calcium requirement with falling systemic iCa despite escalating replacement is the accumulation pattern, not routine titration noise — especially in a patient with liver failure and shock, the classic at-risk population." }
+        ]
+      },
+      {
+        "prompt": "Gas shows pH 7.24, HCO3 15. Using the three-way discrimination — which pattern is this, and what follows?",
+        "options": [
+          { "text": "Acidosis with a high Ca ratio = accumulation, not under-buffering. Reduce or stop citrate rather than adding bicarbonate.", "correct": true, "feedback": "Correct — this is the discrimination the app's citrate module is built around. Treating this as under-buffering (just adding more buffer) would not address the actual problem." },
+          { "text": "Acidosis = under-buffering. Increase the dialysate bicarbonate.", "correct": false, "feedback": "That's the right move for acidosis with a *normal* Ca ratio. Here the ratio is elevated — the citrate isn't being metabolised, so more delivery (even indirectly, by not addressing the citrate itself) won't fix it." }
+        ]
+      },
+      {
+        "prompt": "What are your options now?",
+        "options": [
+          { "text": "Reduce citrate dose, consider increasing effluent rate to raise citrate clearance, or stop citrate and convert to heparin/no anticoagulation.", "correct": true, "feedback": "Correct — all three are reasonable, chosen based on severity and bleeding risk. In severe accumulation, stopping citrate outright is often necessary." },
+          { "text": "Increase the citrate dose to improve circuit anticoagulation.", "correct": false, "feedback": "This is the opposite of what's needed — more citrate delivery in a patient who can't metabolise it worsens accumulation." }
+        ]
+      }
+    ],
+    "debrief": "Acute liver failure with shock is the textbook at-risk population for citrate accumulation. The giveaway is the pattern, not any single number: rising calcium requirement, falling iCa despite escalating replacement, and acidosis with a high (not normal) Ca ratio."
+  },
+  {
+    "id": "case-3-post-cardiotomy",
+    "title": "Post-cardiotomy, active chest tube output",
+    "tag": "none",
+    "stem": "Post-CABG day 1, AKI with oliguria and rising K+. Chest tube output 200 mL/hr and climbing over the last 2 hours. Platelets 140, fibrinogen low-normal.",
+    "steps": [
+      {
+        "prompt": "Which anticoagulation approach fits this bleeding picture?",
+        "options": [
+          { "text": "No anticoagulation — higher Qb, pre-dilution, minimise circuit interruptions, accept shorter filter life.", "correct": true, "feedback": "Correct. Active, worsening bleeding is the clearest indication to avoid additional anticoagulation, systemic or regional." },
+          { "text": "Regional citrate, since it's 'regional' and shouldn't affect systemic bleeding.", "correct": false, "feedback": "Citrate does not cause systemic anticoagulation in the way heparin does, so it's not contraindicated by bleeding per se — but in an actively bleeding, haemodynamically tenuous post-cardiotomy patient, avoiding any additional circuit complexity and running no-anticoagulation is the more conservative and common choice." }
+        ]
+      },
+      {
+        "prompt": "Filter clots after 5 hours despite no anticoagulation. What's the trade-off you accepted, and what do you check before the next filter?",
+        "options": [
+          { "text": "Shorter filter life is the expected trade-off for avoiding anticoagulation in active bleeding — check filtration fraction and consider more pre-dilution or higher Qb.", "correct": true, "feedback": "Correct. This is the trade-off the no-anticoagulation strategy makes explicitly, and it's the right trade to accept here." },
+          { "text": "This means no-anticoagulation was the wrong call and heparin should be started now.", "correct": false, "feedback": "The bleeding risk hasn't changed — a clotted filter is an expected cost of this strategy, not evidence it was wrong. Reassess FF and flow settings before reaching for anticoagulation." }
+        ]
+      }
+    ],
+    "debrief": "Bleeding risk drives anticoagulation choice as much as filter longevity does. No-anticoagulation with optimised flow and dilution settings is the correct default here, even knowing it costs filter life."
+  },
+  {
+    "id": "case-4-hit",
+    "title": "Falling platelets on heparin",
+    "tag": "heparin",
+    "stem": "Day 3 of CRRT on systemic heparin for AKI. Platelets have fallen from 210 to 80 over 48 hours. No other bleeding source identified. No new sepsis.",
+    "steps": [
+      {
+        "prompt": "What's the leading concern with a >50% platelet drop on heparin, days into exposure?",
+        "options": [
+          { "text": "Heparin-induced thrombocytopenia (HIT).", "correct": true, "feedback": "Correct. A >50% fall typically starting 5–10 days after exposure (or faster with prior exposure) is the classic HIT pattern; day 3 with a steep fall still warrants work-up." },
+          { "text": "Expected dilutional thrombocytopenia from the CRRT circuit.", "correct": false, "feedback": "CRRT can cause some platelet consumption, but a >50% fall over 48 hours in a patient on heparin should trigger a HIT work-up, not be dismissed as routine dilution." }
+        ]
+      },
+      {
+        "prompt": "What do you do with the heparin while working this up?",
+        "options": [
+          { "text": "Stop all heparin exposure immediately, including line flushes — not just the infusion.", "correct": true, "feedback": "Correct. All heparin sources need to stop, including flushes, since continued low-dose exposure can perpetuate HIT." },
+          { "text": "Reduce the infusion rate and reassess in 24 hours.", "correct": false, "feedback": "Suspected HIT requires stopping all heparin exposure now, not a dose reduction — any ongoing exposure risks progression to thrombosis." }
+        ]
+      },
+      {
+        "prompt": "CRRT still needs anticoagulation. What are reasonable options?",
+        "options": [
+          { "text": "A non-heparin anticoagulant such as argatroban or bivalirudin, or switch to citrate if not already in use.", "correct": true, "feedback": "Correct. Citrate is calcium-based, not heparin-based, so it's a safe alternative in HIT; argatroban/bivalirudin are the systemic alternatives when regional citrate isn't an option." },
+          { "text": "Restart heparin at a lower dose once platelets stabilise.", "correct": false, "feedback": "Heparin should not be restarted with suspected or confirmed HIT — that's the whole point of the diagnosis. A 4Ts score and antibody testing guide confirmation, but heparin stays off in the meantime." }
+        ]
+      }
+    ],
+    "debrief": "A falling platelet count on heparin needs a HIT trigger in your head, not just a differential on a list. Stop all heparin exposure while working it up, and remember citrate is calcium-based — it's a safe circuit anticoagulant in HIT."
+  },
+  {
+    "id": "case-5-hyponatraemia",
+    "title": "Severe chronic hyponatraemia",
+    "tag": "none",
+    "stem": "Cirrhotic patient, AKI with volume overload, presenting Na+ 108 mmol/L, likely chronic given a stable outpatient history of Na+ in the low 120s. CRRT is being considered for volume and metabolic control.",
+    "steps": [
+      {
+        "prompt": "Standard CRRT solutions run sodium around 140 mmol/L. What's the concern with starting CRRT unmodified here?",
+        "options": [
+          { "text": "The 32 mmol/L gradient risks correcting the sodium far too fast — CRRT corrects continuously and efficiently, unlike a slow IV infusion.", "correct": true, "feedback": "Correct. Osmotic demyelination risk scales with correction rate, and unmodified CRRT against a standard-sodium solution can correct chronic hyponatraemia dangerously fast." },
+          { "text": "No particular concern — CRRT solutions are standardised and safe by default.", "correct": false, "feedback": "The sodium gradient here is large enough (>10–12 mmol/L threshold) to warrant real concern and specific mitigation before starting." }
+        ]
+      },
+      {
+        "prompt": "What mitigation strategies are reasonable?",
+        "options": [
+          { "text": "Custom low-sodium dialysate/replacement fluid, D5W run into the circuit, or a reduced effluent dose — arranged with pharmacy and a staff physician before starting.", "correct": true, "feedback": "Correct. All three blunt the correction rate; which one(s) to use depends on local capability, and this is explicitly a decision that needs senior and pharmacy involvement, not a bedside improvisation." },
+          { "text": "Start CRRT as usual and simply check sodium more frequently.", "correct": false, "feedback": "Frequent monitoring alone doesn't slow the correction — you need to actively blunt the gradient, and by the time frequent checks show over-correction it may already be too late to reverse the risk." }
+        ]
+      }
+    ],
+    "debrief": "Severe chronic hyponatraemia is a case where the standard CRRT prescription itself is the hazard. This needs explicit sodium-gradient planning before the first drop of blood leaves the patient, not reactive monitoring."
+  },
+  {
+    "id": "case-6-phosphate",
+    "title": "Tumour lysis: hyperphosphataemia then hypophosphataemia",
+    "tag": "citrate",
+    "stem": "Tumour lysis syndrome, K+ 7.2, phosphate 3.8 mmol/L (markedly elevated), uric acid elevated, oliguric AKI. CRRT started on citrate.",
+    "steps": [
+      {
+        "prompt": "Day 0: phosphate is markedly high. What does CRRT do to it, and does that change your initial solution choice?",
+        "options": [
+          { "text": "CRRT clears phosphate efficiently; a standard (phosphate-free) solution is appropriate initially given the starting hyperphosphataemia.", "correct": true, "feedback": "Correct. With phosphate this high, you want clearance, not replacement — a phosphate-free solution is the right initial choice." },
+          { "text": "Start a phosphate-containing solution from hour one to prevent future hypophosphataemia.", "correct": false, "feedback": "Not with phosphate at 3.8 mmol/L — you'd be working against the clearance you actually need right now. Phosphate-containing solutions become relevant later, once levels normalise or fall." }
+        ]
+      },
+      {
+        "prompt": "Day 2, still on the same effluent dose: phosphate is now 0.4 mmol/L (low). What do you do?",
+        "options": [
+          { "text": "This is expected — near-universal hypophosphataemia by 24–48h on CRRT. Switch to a phosphate-containing solution or add separate IV replacement, and increase monitoring frequency.", "correct": true, "feedback": "Correct. The same clearance that was helpful on day 0 becomes a liability by day 2 if the solution isn't adjusted — this is the expected trajectory, not a surprise." },
+          { "text": "Continue the same solution and recheck in 48 hours.", "correct": false, "feedback": "Waiting 48 hours risks clinically significant hypophosphataemia (weakness, respiratory muscle dysfunction, arrhythmia). This needs action now and closer monitoring, not a delayed recheck." }
+        ]
+      }
+    ],
+    "debrief": "The right phosphate strategy changes over the course of treatment — clearance is the goal on day 0 in tumour lysis, replacement is the goal by day 2 once CRRT has done its job. Anticipate the flip rather than reacting to it."
+  },
+  {
+    "id": "case-7-clotting",
+    "title": "Repeated circuit clotting",
+    "tag": "heparin",
+    "stem": "Patient on heparin anticoagulation. Third filter clot in 12 hours, each time within a few hours of a fresh circuit. aPTT has been in target range (45–60s) each time it was checked.",
+    "steps": [
+      {
+        "prompt": "aPTT is in range each time — so what should you check next?",
+        "options": [
+          { "text": "Filtration fraction and access adequacy — a clotting circuit with therapeutic aPTT points away from anticoagulation dosing and toward flow/haemoconcentration.", "correct": true, "feedback": "Correct. If the aPTT is genuinely in range and the filter still clots repeatedly, the anticoagulation dose is probably not the problem — look at FF, Qb, and access function instead." },
+          { "text": "Increase the heparin infusion further despite the in-range aPTT.", "correct": false, "feedback": "Pushing anticoagulation past target when the aPTT is already therapeutic adds bleeding risk without addressing the likely real cause." }
+        ]
+      },
+      {
+        "prompt": "Filtration fraction comes back at 32%. What does that tell you, and what's the fix?",
+        "options": [
+          { "text": "FF > 30% is a red flag for haemoconcentration at the filter — increase Qb, shift replacement fluid pre-filter, or reduce the post-filter replacement rate.", "correct": true, "feedback": "Correct. A high FF concentrates cells and proteins at the membrane and predisposes to clotting independent of anticoagulation adequacy." },
+          { "text": "FF of 32% is unremarkable and not related to the clotting.", "correct": false, "feedback": "32% is above the red threshold (>30%) in this app's flagging scheme, and haemoconcentration at that level is a well-recognised driver of repeated filter clotting." }
+        ]
+      },
+      {
+        "prompt": "You also check access pressure — it's intermittently very negative during pump acceleration. What does this add?",
+        "options": [
+          { "text": "Intermittent poor inflow suggests access limitation contributing to stasis and clotting risk — worth reassessing catheter position/patency alongside the FF fix.", "correct": true, "feedback": "Correct. Poor, intermittent inflow compounds the haemoconcentration problem — flow interruptions promote stasis, which promotes clotting. Both need addressing together." },
+          { "text": "This is unrelated and can be ignored once FF is corrected.", "correct": false, "feedback": "Access-related flow interruptions are a separate but compounding contributor — fixing FF alone may not solve the clotting if inflow is intermittently inadequate." }
+        ]
+      }
+    ],
+    "debrief": "Repeated clotting despite therapeutic anticoagulation is a cue to look at flow and filtration fraction, not just push the anticoagulant dose. Access adequacy and FF are often the real story."
+  },
+  {
+    "id": "case-8-obesity",
+    "title": "BMI 46 — dosing weight and access",
+    "tag": "citrate",
+    "stem": "52-year-old, BMI 46, septic AKI meeting criteria for CRRT initiation. Femoral access was attempted but is technically difficult; ultrasound-guided right IJ obtained instead.",
+    "steps": [
+      {
+        "prompt": "Which weight should anchor the dose calculation?",
+        "options": [
+          { "text": "There's no single correct answer — show both actual and adjusted body weight, since dosing to actual weight in obesity may over-prescribe.", "correct": true, "feedback": "Correct. This is a genuinely unsettled area; the app deliberately presents both numbers rather than picking one as definitive." },
+          { "text": "Always use actual body weight, full stop.", "correct": false, "feedback": "Actual weight is the default starting point, but in a BMI 46 patient it's reasonable to also look at an adjusted-weight-based dose and use judgement — presenting only one number hides the ambiguity." }
+        ]
+      },
+      {
+        "prompt": "The right IJ was chosen over femoral. Why does that fit the access hierarchy discussed in the guided builder?",
+        "options": [
+          { "text": "Right IJ is generally preferred — shortest, straightest path, lowest recirculation risk — and femoral access is often technically harder and more prone to positional flow problems in a high-BMI patient.", "correct": true, "feedback": "Correct. This matches the general access hierarchy (right IJ preferred, femoral acceptable, left IJ least preferred) and the practical reality that femoral access can be more difficult and less reliable in obesity." },
+          { "text": "Femoral is always preferred regardless of body habitus.", "correct": false, "feedback": "Femoral is acceptable but not first-line, and in a high-BMI patient it's often technically harder and more prone to kinking/positional pressure problems than a well-placed right IJ." }
+        ]
+      }
+    ],
+    "debrief": "Obesity raises two separate questions that shouldn't be conflated: which weight to dose against (unsettled — show both), and which access site is practical (favours right IJ here for technical and flow reasons)."
+  }
+]

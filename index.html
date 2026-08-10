@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRRT — Prescribe &amp; Learn</title>
+<meta name="description" content="CRRT calculator and teaching app for regional citrate and heparin-based continuous renal replacement therapy.">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="safety-banner">
+    <strong>Educational tool.</strong> Not a medical order. Verify every value against your unit's CRRT protocol and pharmacy-approved solution monographs before use.
+  </div>
+
+  <div class="app-shell">
+    <nav class="top-nav">
+      <div class="brand">CRRT<small>Prescribe · Learn · Theory</small></div>
+      <a class="nav-link" href="#/prescribe">Prescribe</a>
+      <a class="nav-link" href="#/learn">Learn</a>
+      <a class="nav-link" href="#/theory">Theory</a>
+      <a class="nav-link" href="#/settings">Settings</a>
+    </nav>
+
+    <main id="view-root">
+      <!-- view mounts here -->
+    </main>
+
+    <footer class="safety-footer">
+      Educational tool only — not a medical order. Verify every value against your unit's CRRT protocol and pharmacy-approved solution monographs before use.
+      <br>Content review status is shown per section. See Settings for the local protocol config this app is running against.
+    </footer>
+  </div>
+
+  <script src="js/calc.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/schematic.js"></script>
+  <script src="js/ui-calculator.js"></script>
+  <script src="js/ui-theory.js"></script>
+  <script src="js/ui-teaching.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
