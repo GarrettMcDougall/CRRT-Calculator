@@ -4,6 +4,33 @@
   const viewRoot = document.getElementById('view-root');
   const navLinks = () => document.querySelectorAll('nav.top-nav a.nav-link');
 
+  async function enableAutomaticUpdates() {
+    if (!('serviceWorker' in navigator)) return;
+
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloading) return;
+      reloading = true;
+      window.location.reload();
+    });
+
+    try {
+      const registration = await navigator.serviceWorker.register('./sw.js', {
+        scope: './',
+        updateViaCache: 'none'
+      });
+
+      // Force a service-worker update check on every online app launch.
+      // Network-first fetch handling also refreshes each requested app file.
+      if (navigator.onLine) await registration.update();
+      window.addEventListener('online', () => registration.update());
+    } catch (error) {
+      console.warn('Automatic update check unavailable.', error);
+    }
+  }
+
   function setActiveNav(hash) {
     const section = '#/' + (hash.split('/')[1] || 'prescribe');
     navLinks().forEach(a => {
@@ -77,5 +104,8 @@
   }
 
   window.addEventListener('hashchange', route);
-  window.addEventListener('DOMContentLoaded', route);
+  window.addEventListener('DOMContentLoaded', () => {
+    enableAutomaticUpdates();
+    route();
+  });
 })();

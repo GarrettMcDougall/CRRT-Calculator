@@ -12,6 +12,10 @@ A static, no-build-step web app: a CRRT calculator (regional citrate and systemi
 
 No build step, no npm install — plain HTML/CSS/JS.
 
+The app includes a service worker. Every online launch checks GitHub Pages for a newer deployment and uses network-first requests for app files. A new version activates immediately and reloads the app once. The most recently loaded version remains available offline.
+
+For updates to reach users, replace the files in the same GitHub Pages repository and wait for the Pages deployment to finish. Users do not need to reinstall the home-screen app.
+
 **Do not open `index.html` by double-clicking it.** The app loads its theory, cases, quiz, and config content with `fetch()`, and browsers block `fetch()` from a page opened directly off disk (`file://...`) — you'll get a "Something went wrong loading this view" error on the Learn and Theory tabs (Prescribe still loads because it degrades gracefully if the config can't be reached, but you're missing your local protocol values at that point too).
 
 To preview locally, serve the folder over http instead — from inside `crrt-app/`:
