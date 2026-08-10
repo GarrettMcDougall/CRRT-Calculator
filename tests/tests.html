@@ -83,10 +83,11 @@
   });
   check('C: effluent still 2100 mL/hr', Cx.effluentRate_mL_hr, 2100, 0.01);
   check('C: prescribed still 26.25 mL/kg/hr', Cx.prescribedDose_mL_kg_hr, 26.25, 0.01);
-  check('C: plasma water flow = 5859 mL/hr', Cx.plasmaWaterFlow_mL_hr, 5859, 1);
-  check('C: dilution factor = 0.9214', Cx.dilutionFactor, 0.9214, 0.001);
-  check('C: corrected dose = 24.2 mL/kg/hr', Cx.correctedDose_mL_kg_hr, 24.2, 0.1);
-  check('C: FF = 0.0147 (1.5%)', Cx.filtrationFraction, 0.0147, 0.001);
+  check('C: plasma flow = 6300 mL/hr', Cx.plasmaWaterFlow_mL_hr, 6300, 1);
+  check('C: dilution factor = 0.9265', Cx.dilutionFactor, 0.9265, 0.001);
+  check('C: corrected dose = 24.32 mL/kg/hr', Cx.correctedDose_mL_kg_hr, 24.32, 0.1);
+  check('C: FF includes pre-replacement = 0.0882 (8.8%)', Cx.filtrationFraction, 0.0882, 0.001);
+  check('C: total UF includes pre-replacement = 600 mL/hr', Cx.totalUltrafiltration_mL_hr, 600, 0.01);
 
   // --- D: Citrate, concentrated ACD-A ---
   const D = C.citrateFlowFromTargetDose({
@@ -156,6 +157,14 @@
   check('H: infusion = 600 units/hr', H.infusionUnits_hr, 600, 0.01);
   check('H: infusion rate = 6.0 mL/hr', H.infusionRate_mL_hr, 6.0, 0.01);
 
+  const Hfixed = C.computeHeparinDosing({
+    weightKg: 80,
+    bolusUnits: 750,
+    infusionUnitsPerKgHr: 7.5,
+    heparinConcentration_units_mL: 100,
+  });
+  check('H: fixed generic bolus = 750 units', Hfixed.bolusUnits, 750, 0.01);
+
   // --- I: Phosphate ---
   const I = C.estimatePhosphateRemoval({ effluentRate_mL_hr: 2100, serumPO4_mmol_L: 1.0 });
   check('I: PO4 removal ≈ 50.4 mmol/day', I.po4Removal_mmol_day, 50.4, 0.1);
@@ -164,6 +173,21 @@
   const J = C.sodiumGradientCheck({ serumNa_mmol_L: 110, solutionNa_mmol_L: 140 });
   check('J: gradient = 30 mmol/L', J.gradient_mmol_L, 30, 0.01);
   check('J: flag = true (red)', J.flag ? 1 : 0, 1, 0);
+
+  // --- Guided starting prescription ---
+  const K = C.suggestPrescription({
+    weightKg: 80,
+    hematocrit: 0.30,
+    modality: 'CVVHDF',
+    bloodFlow_mL_min: 150,
+    targetDeliveredDose_mL_kg_hr: 22.5,
+    uptimeFraction: 0.90,
+    netUltrafiltration_mL_hr: 0,
+    citrateFlow_mL_hr: 239,
+    citratePreFilter: true,
+  });
+  check('K: suggested delivered dose is near 22.5', K.predictedDeliveredDose_mL_kg_hr, 22.5, 0.8);
+  check('K: suggested FF is at or below 20%', K.predictedFiltrationFraction <= 0.205 ? 1 : 0, 1, 0);
 
   // --- Acid-base pattern discrimination (§3.2 three-way) ---
   check(

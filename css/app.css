@@ -153,6 +153,7 @@ label {
 }
 .field { margin-bottom: var(--sp-3); }
 .field .unit { color: var(--muted); font-size: var(--fs-small); margin-left: 0.3rem; }
+.field-help { color: var(--muted); font-size: 0.76rem; line-height: 1.35; margin-top: 0.35rem; text-transform: none; letter-spacing: 0; }
 
 input[type="number"], input[type="text"], select {
   width: 100%;
@@ -191,6 +192,7 @@ button.primary {
   cursor: pointer;
   font-size: 0.9rem;
 }
+button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
 button.secondary {
   background: transparent;
   color: var(--bone);
@@ -199,6 +201,19 @@ button.secondary {
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-size: 0.9rem;
+}
+
+/* ---------- Guided prescription ---------- */
+.guidance-card { border-color: color-mix(in srgb, var(--citrate) 45%, var(--hairline)); }
+.card-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.eyebrow { display: block; color: var(--citrate); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.2rem; }
+.guidance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); margin: var(--sp-3) 0; }
+.guidance-item { display: flex; flex-direction: column; gap: 0.2rem; background: var(--panel-raised); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: var(--sp-3); }
+.guidance-item strong { color: var(--bone); font-family: var(--font-mono); }
+.guidance-item span { color: var(--muted); font-size: var(--fs-small); }
+@media (max-width: 600px) {
+  .guidance-grid { grid-template-columns: 1fr; }
+  .card-title-row { flex-direction: column; }
 }
 
 /* ---------- Output display ---------- */
@@ -331,6 +346,25 @@ details.working .formula { font-family: var(--font-mono); background: var(--grou
 
 /* ---------- Quiz ---------- */
 .quiz-meta { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-2); font-size: var(--fs-small); color: var(--muted); }
+
+/* ---------- Commercial solution catalogue ---------- */
+.solution-summary {
+  margin-top: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--panel-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+}
+.composition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+.composition-grid span { white-space: nowrap; }
+select option:disabled { color: var(--muted); }
 
 /* ---------- Utility ---------- */
 .muted { color: var(--muted); }

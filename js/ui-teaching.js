@@ -67,9 +67,9 @@ window.CRRTUITeaching = (function () {
       key: 'access', title: 'Access site and catheter',
       theoryLink: 'circuit',
       options: [
-        { label: 'Right internal jugular', order: 'Access: Right IJ (~15 cm)', why: 'Shortest, straightest path — generally preferred, lowest recirculation risk.' },
-        { label: 'Femoral', order: 'Access: Femoral (24–25 cm)', why: 'Acceptable, but more prone to positional flow problems (e.g. with hip flexion) and needs a longer catheter to avoid recirculation.' },
-        { label: 'Left internal jugular', order: 'Access: Left IJ (~20 cm)', why: 'Generally least preferred — a longer, more curved path than right IJ.' },
+        { label: 'Right internal jugular', order: 'Access: Right IJ; catheter length selected for confirmed tip position', why: 'Usually the shortest, straightest route. Choose length from patient anatomy and the catheter product, then confirm tip position.' },
+        { label: 'Femoral', order: 'Access: Femoral; length selected to place the tip in the IVC', why: 'Acceptable when practical. A catheter that is too short increases recirculation, and hip flexion may impair flow.' },
+        { label: 'Left internal jugular', order: 'Access: Left IJ; length selected for confirmed tip position', why: 'Usable, but the longer curved course can impair flow. Avoid a fixed length rule.' },
       ],
     },
     {
@@ -86,7 +86,7 @@ window.CRRTUITeaching = (function () {
       key: 'dose', title: 'Dose',
       theoryLink: 'dose',
       options: [
-        { label: 'Prescribe 25–30 mL/kg/hr to deliver 20–25', order: 'Dose: prescribe 25–30 mL/kg/hr (target delivered 20–25)', why: 'KDIGO targets 20–25 mL/kg/hr delivered; prescribing higher absorbs expected circuit downtime.' },
+        { label: 'Calculate a prescription that will deliver 20–25 mL/kg/hr', order: 'Dose: target delivered 20–25 mL/kg/hr; calculate prescribed rate from expected uptime and pre-dilution', why: 'A fixed 25–30 rule can underdose or overdose. The calculator solves from the delivered target, expected downtime, and pre-filter dilution.' },
         { label: 'Prescribe exactly 20–25 mL/kg/hr', order: 'Dose: prescribe 20–25 mL/kg/hr', why: 'Without a downtime margin, delivered dose will likely fall below target once circuit changes and interruptions are accounted for.' },
       ],
     },
@@ -94,7 +94,7 @@ window.CRRTUITeaching = (function () {
       key: 'anticoag', title: 'Anticoagulation',
       theoryLink: 'anticoagulation',
       options: [
-        { label: 'Regional citrate (no contraindication)', order: 'Anticoagulation: Regional citrate', why: 'KDIGO-preferred default — longer filter life, less bleeding than heparin — when there\'s no contraindication (severe liver failure, inability to metabolise citrate load).' },
+        { label: 'Regional citrate when the protocol and monitoring are suitable', order: 'Anticoagulation: Regional citrate', why: 'KDIGO-preferred default because it improves filter life and reduces bleeding. Severe liver failure or shock raises accumulation risk and requires protocol-specific assessment and close monitoring.' },
         { label: 'Systemic heparin', order: 'Anticoagulation: Systemic heparin', why: 'Reasonable where citrate is unavailable or contraindicated.' },
         { label: 'None — active bleeding or high bleeding risk', order: 'Anticoagulation: None (optimise flow/dilution instead)', why: 'The correct default with active bleeding — accept shorter filter life as the trade-off.' },
       ],
@@ -110,7 +110,7 @@ window.CRRTUITeaching = (function () {
       key: 'solutions', title: 'Solutions and electrolytes',
       theoryLink: 'complications',
       options: [
-        { label: 'Anticipate hypophosphataemia; plan potassium bath and monitoring up front', order: 'Solutions: phosphate-aware plan, K+ bath selected, monitoring scheduled', why: 'Hypophosphataemia is near-universal by 24–48h — plan for it rather than reacting after a low value.' },
+        { label: 'Anticipate hypophosphataemia; plan potassium bath and monitoring up front', order: 'Solutions: phosphate-aware plan, K+ bath selected, monitoring scheduled', why: 'Hypophosphataemia is common during CRRT, especially with phosphate-free solutions and longer treatment. Plan monitoring and replacement rather than waiting for a severe value.' },
       ],
     },
     {

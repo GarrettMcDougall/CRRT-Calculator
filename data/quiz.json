@@ -39,9 +39,9 @@
       { "text": "Ratio 3.1 — suggests citrate accumulation.", "correct": true, "explain": "Correct — 3.1/1.0 = 3.1, above the 2.5 threshold, consistent with accumulation, especially with impaired citrate metabolism." },
       { "text": "This ratio can't be interpreted without a lactate level.", "correct": false, "explain": "The total:ionised calcium ratio is interpretable on its own; lactate supports the overall picture but isn't required to flag the ratio." }
     ] },
-  { "id": "q9", "topic": "anticoagulation", "difficulty": "easy", "question": "Which patient is the clearest candidate for a no-anticoagulation CRRT strategy?", "options": [
-      { "text": "A patient with active, worsening surgical bleeding.", "correct": true, "explain": "Correct — active bleeding is the clearest indication to avoid additional anticoagulation." },
-      { "text": "A patient with septic AKI and no bleeding risk.", "correct": false, "explain": "This patient has no contraindication to citrate, which would usually be preferred over no anticoagulation." },
+  { "id": "q9", "topic": "anticoagulation", "difficulty": "easy", "question": "When is a no-anticoagulation CRRT strategy most reasonable?", "options": [
+      { "text": "Active bleeding when regional citrate is unsuitable or unavailable.", "correct": true, "explain": "Correct — regional citrate is preferred when suitable because it avoids systemic anticoagulation. No anticoagulation is a reasonable fallback when it cannot be used." },
+      { "text": "A patient with septic AKI and no bleeding risk.", "correct": false, "explain": "Regional citrate would usually be preferred over no anticoagulation when suitable." },
       { "text": "A patient with a therapeutic aPTT already on heparin for another indication.", "correct": false, "explain": "This patient may not need separate CRRT anticoagulation at all, but that's a different scenario from a deliberate no-anticoagulation strategy for bleeding risk." }
     ] },
   { "id": "q10", "topic": "anticoagulation", "difficulty": "medium", "question": "Per KDIGO, which anticoagulation approach is preferred as default when there is no contraindication?", "options": [
@@ -56,7 +56,7 @@
     ] },
   { "id": "q12", "topic": "fluid", "difficulty": "easy", "question": "Which best describes 'total ultrafiltration'?", "options": [
       { "text": "The fluid that actually leaves the patient per hour.", "correct": false, "explain": "That's net UF, not total UF." },
-      { "text": "Net UF plus post-dilution replacement volume — what crosses the membrane.", "correct": true, "explain": "Correct — total UF matters for filter stress/FF, not for the patient's fluid balance directly." },
+      { "text": "Net UF plus all pre- and post-filter replacement fluid that must cross the membrane.", "correct": true, "explain": "Correct — total UF includes pre- and post-filter replacement plus net UF. Dialysate is separate." },
       { "text": "The dialysate flow rate only.", "correct": false, "explain": "Dialysate flow is a separate component of effluent, not the definition of total UF." }
     ] },
   { "id": "q13", "topic": "fluid", "difficulty": "medium", "question": "A patient becomes hypotensive shortly after net UF rate is increased. What's the most likely mechanism?", "options": [
@@ -64,10 +64,10 @@
       { "text": "Citrate accumulation.", "correct": false, "explain": "Citrate accumulation presents with acid-base and calcium abnormalities, not acute hypotension tied to a UF rate change." },
       { "text": "Recirculation.", "correct": false, "explain": "Recirculation reduces delivered dose silently; it doesn't typically cause acute hypotension tied temporally to a UF rate increase." }
     ] },
-  { "id": "q14", "topic": "complications", "difficulty": "easy", "question": "By what timeframe is hypophosphataemia near-universal on conventional-dose CRRT?", "options": [
-      { "text": "24–48 hours.", "correct": true, "explain": "Correct — phosphate is small and freely cleared, so this should be anticipated, not just reacted to." },
-      { "text": "7–10 days.", "correct": false, "explain": "This underestimates how quickly phosphate falls on CRRT — it happens much sooner." },
-      { "text": "It's rare and doesn't need routine monitoring.", "correct": false, "explain": "It's actually near-universal and needs proactive monitoring, the opposite of rare." }
+  { "id": "q14", "topic": "complications", "difficulty": "easy", "question": "Which statement about phosphate during CRRT is most accurate?", "options": [
+      { "text": "Hypophosphataemia is common and should be anticipated with monitoring and a replacement plan.", "correct": true, "explain": "Correct — phosphate is readily cleared, especially with phosphate-free solutions and longer treatment." },
+      { "text": "Phosphate cannot fall until at least 7–10 days.", "correct": false, "explain": "Phosphate may fall much earlier during CRRT." },
+      { "text": "Hypophosphataemia is rare and does not need routine monitoring.", "correct": false, "explain": "It is common enough to require proactive monitoring." }
     ] },
   { "id": "q15", "topic": "complications", "difficulty": "medium", "question": "Why can't standard renal drug-dosing tables be used directly for a patient on CRRT?", "options": [
       { "text": "They're built for stable CKD clearance rates, which don't match a 20–30 mL/kg/hr extracorporeal circuit.", "correct": true, "explain": "Correct — CRRT clearance is a different physiological situation from steady-state CKD, and dosing needs a CRRT-specific reference or pharmacist input." },

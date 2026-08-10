@@ -69,8 +69,9 @@
     const prescribedDose_mL_kg_hr = effluentRate_mL_hr / weightKg;
     const deliveredDose_mL_kg_hr = prescribedDose_mL_kg_hr * uptimeFraction;
 
-    // Pre-dilution correction
-    const plasmaWaterFlow_mL_hr = bloodFlow_mL_min * 60 * (1 - hematocrit) * 0.93;
+    // Pre-dilution correction. KDIGO defines this using plasma flow.
+    const plasmaFlow_mL_hr = bloodFlow_mL_min * 60 * (1 - hematocrit);
+    const plasmaWaterFlow_mL_hr = plasmaFlow_mL_hr;
     const totalPreDilution_mL_hr = replacementPre_mL_hr + citrateAsPreDilution;
     const dilutionFactor =
       plasmaWaterFlow_mL_hr / (plasmaWaterFlow_mL_hr + totalPreDilution_mL_hr);
@@ -78,18 +79,25 @@
     const correctedDeliveredDose_mL_kg_hr = correctedDose_mL_kg_hr * uptimeFraction;
 
     // Filtration fraction
-    const plasmaFlow_mL_hr = bloodFlow_mL_min * 60 * (1 - hematocrit);
-    const ffNumerator_mL_hr = replacementPost_mL_hr + netUltrafiltration_mL_hr;
+    // All pre- and post-filter replacement fluid must ultimately cross the
+    // membrane to maintain balance. It therefore belongs in total UF and the
+    // FF numerator. The previous implementation omitted pre-dilution fluid.
+    const ffNumerator_mL_hr =
+      replacementPre_mL_hr +
+      replacementPost_mL_hr +
+      netUltrafiltration_mL_hr +
+      citrateAsPreDilution;
     const ffDenominator_mL_hr = plasmaFlow_mL_hr + totalPreDilution_mL_hr;
     const filtrationFraction = ffNumerator_mL_hr / ffDenominator_mL_hr;
 
     let ffFlag = 'green';
-    if (filtrationFraction > 0.30) ffFlag = 'red';
-    else if (filtrationFraction > 0.25) ffFlag = 'amber';
+    if (filtrationFraction > 0.25) ffFlag = 'red';
+    else if (filtrationFraction > 0.20) ffFlag = 'amber';
 
     // Total UF vs net UF
-    const totalUltrafiltration_mL_hr = netUltrafiltration_mL_hr + replacementPost_mL_hr;
-    const netFluidBalance_mL_hr = netUltrafiltration_mL_hr - nonCRRTIntake_mL_hr;
+    const totalUltrafiltration_mL_hr = ffNumerator_mL_hr;
+    // Conventional sign: positive means net fluid accumulation.
+    const estimatedPatientBalance_mL_hr = nonCRRTIntake_mL_hr - netUltrafiltration_mL_hr;
 
     return {
       effluentRate_mL_hr,
@@ -103,8 +111,88 @@
       filtrationFraction,
       ffFlag,
       totalUltrafiltration_mL_hr,
-      netFluidBalance_mL_hr,
+      estimatedPatientBalance_mL_hr,
       citrateAsPreDilution_mL_hr: citrateAsPreDilution,
+    };
+  }
+
+  /**
+   * Build a coherent generic starting prescription around a target delivered
+   * small-solute dose. This is intentionally protocol-agnostic: it suggests
+   * machine flows, but not local solution selection or titration nomograms.
+   */
+  function suggestPrescription({
+    weightKg,
+    hematocrit = 0.30,
+    modality = 'CVVHDF',
+    bloodFlow_mL_min = 150,
+    targetDeliveredDose_mL_kg_hr = 22.5,
+    uptimeFraction = 0.90,
+    netUltrafiltration_mL_hr = 0,
+    citrateFlow_mL_hr = 0,
+    citratePreFilter = true,
+  }) {
+    if (modality === 'SCUF') {
+      return {
+        bloodFlow_mL_min,
+        dialysateFlow_mL_hr: 0,
+        replacementPre_mL_hr: 0,
+        replacementPost_mL_hr: 0,
+        rationale: 'SCUF targets fluid removal, not a small-solute dose.',
+      };
+    }
+
+    let qd = modality === 'CVVHD' ? 1800 : modality === 'CVVHDF' ? 1200 : 0;
+    let qrTotal = modality === 'CVVH' ? 1800 : modality === 'CVVHDF' ? 600 : 0;
+    let preFraction = 0;
+
+    for (let i = 0; i < 16; i += 1) {
+      let pre = qrTotal * preFraction;
+      let post = qrTotal - pre;
+      let result = computeDoseAndFF({
+        weightKg, hematocrit, bloodFlow_mL_min,
+        dialysateFlow_mL_hr: qd,
+        replacementPre_mL_hr: pre,
+        replacementPost_mL_hr: post,
+        netUltrafiltration_mL_hr,
+        citrateFlow_mL_hr,
+        citratePreFilter,
+        uptimeFraction,
+      });
+
+      const scale = targetDeliveredDose_mL_kg_hr / Math.max(result.correctedDeliveredDose_mL_kg_hr, 0.1);
+      qd *= scale;
+      qrTotal *= scale;
+
+      if (qrTotal > 0) {
+        const plasmaFlow = bloodFlow_mL_min * 60 * (1 - hematocrit);
+        const citratePre = citratePreFilter ? citrateFlow_mL_hr : 0;
+        const totalUF = qrTotal + netUltrafiltration_mL_hr + citratePre;
+        const preNeededForFF20 = Math.max(0, totalUF / 0.20 - plasmaFlow - citratePre);
+        preFraction = Math.min(0.80, preNeededForFF20 / qrTotal);
+      }
+    }
+
+    const round50 = (v) => Math.max(0, Math.round(v / 50) * 50);
+    const suggested = {
+      bloodFlow_mL_min,
+      dialysateFlow_mL_hr: round50(qd),
+      replacementPre_mL_hr: round50(qrTotal * preFraction),
+      replacementPost_mL_hr: round50(qrTotal * (1 - preFraction)),
+    };
+    const check = computeDoseAndFF({
+      weightKg, hematocrit, bloodFlow_mL_min,
+      ...suggested,
+      netUltrafiltration_mL_hr,
+      citrateFlow_mL_hr,
+      citratePreFilter,
+      uptimeFraction,
+    });
+    return {
+      ...suggested,
+      predictedDeliveredDose_mL_kg_hr: check.correctedDeliveredDose_mL_kg_hr,
+      predictedFiltrationFraction: check.filtrationFraction,
+      rationale: 'Flows are rounded to 50 mL/h, account for expected downtime and pre-dilution, and aim for filtration fraction near or below 20% when convection is used.',
     };
   }
 
@@ -165,7 +253,7 @@
     let doseFlag = 'green';
     if (actualCitrateDose_mmol_L < 2.0 || actualCitrateDose_mmol_L > 5.0) {
       doseFlag = 'red';
-    } else if (actualCitrateDose_mmol_L < 2.5 || actualCitrateDose_mmol_L > 4.0) {
+    } else if (actualCitrateDose_mmol_L < 3.0 || actualCitrateDose_mmol_L > 4.0) {
       doseFlag = 'amber';
     }
 
@@ -229,14 +317,17 @@
 
   function computeHeparinDosing({
     weightKg,
-    bolusUnitsPerKg = 25,
+    bolusUnits = null,
+    bolusUnitsPerKg = null,
     infusionUnitsPerKgHr = 7.5,
     heparinConcentration_units_mL,
   }) {
-    const bolusUnits = weightKg * bolusUnitsPerKg;
+    const calculatedBolusUnits = bolusUnits !== null
+      ? bolusUnits
+      : weightKg * (bolusUnitsPerKg || 0);
     const infusionUnits_hr = weightKg * infusionUnitsPerKgHr;
     const infusionRate_mL_hr = infusionUnits_hr / heparinConcentration_units_mL;
-    return { bolusUnits, infusionUnits_hr, infusionRate_mL_hr };
+    return { bolusUnits: calculatedBolusUnits, infusionUnits_hr, infusionRate_mL_hr };
   }
 
   // ---------------------------------------------------------------------
@@ -264,6 +355,7 @@
 
   return {
     computeDoseAndFF,
+    suggestPrescription,
     computeBMIAndAdjustedWeight,
     citrateFlowFromTargetDose,
     citrateDoseFromFlow,

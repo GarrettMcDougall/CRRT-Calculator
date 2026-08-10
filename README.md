@@ -31,14 +31,18 @@ Before using this beyond personal study:
    - Citrate solution presets (concentrations vary by product and by site — do not trust the shipped values)
    - The calcium and heparin titration tables — these are placeholder structures, not real nomograms
    - Monitoring lab schedule and pressure limits
-2. Set `"reviewed": true` at the top level once you've done this, and update the per-section `reviewed` flags in `data/theory.json`, `data/cases.json`, `data/quiz.json`, and `config/local-protocol.json` as you check each one. The app surfaces an "unreviewed content" marker until you do.
-3. Re-run `tests/tests.html` in a browser after any change to `js/calc.js` — it checks the calculation engine against ten worked examples.
+2. Review `data/solutions.json` with pharmacy and the CRRT program lead. It contains a brand-first product catalogue. Entries whose full composition is not yet verified appear in the menu but are disabled. Confirm regional availability, final bag-label composition, compatible connectors, and machine-integrated citrate/calcium workflows before enabling or adding products.
+3. Set `"reviewed": true` at the top level once you've done this, and update the per-section `reviewed` flags in `data/theory.json`, `data/cases.json`, `data/quiz.json`, `data/solutions.json`, and `config/local-protocol.json` as you check each one. The app surfaces an "unreviewed content" marker until you do.
+4. Re-run `tests/tests.html` in a browser after any change to `js/calc.js`. It checks dose, filtration fraction, citrate, heparin, electrolyte warnings, and guided starting-flow calculations.
+
+See `CLINICAL_REVIEW.md` for corrected errors, unresolved local protocol decisions, and the recommended next build.
 
 ## Structure
 
 - `js/calc.js` — pure calculation functions, no DOM. This is the part that has to be right; everything else is presentation.
 - `tests/tests.html` — open directly in a browser to run the test suite and see pass/fail.
 - `config/local-protocol.json` — the file you fork and edit for your site.
+- `data/solutions.json` — region- and brand-grouped dialysate, replacement, and citrate catalogue with normalized mmol/L values and verification status.
 - `data/*.json` — theory content, teaching cases, quiz bank, troubleshooting scenarios.
 
 ## Privacy

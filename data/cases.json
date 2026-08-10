@@ -62,25 +62,25 @@
   {
     "id": "case-3-post-cardiotomy",
     "title": "Post-cardiotomy, active chest tube output",
-    "tag": "none",
+    "tag": "citrate",
     "stem": "Post-CABG day 1, AKI with oliguria and rising K+. Chest tube output 200 mL/hr and climbing over the last 2 hours. Platelets 140, fibrinogen low-normal.",
     "steps": [
       {
         "prompt": "Which anticoagulation approach fits this bleeding picture?",
         "options": [
-          { "text": "No anticoagulation — higher Qb, pre-dilution, minimise circuit interruptions, accept shorter filter life.", "correct": true, "feedback": "Correct. Active, worsening bleeding is the clearest indication to avoid additional anticoagulation, systemic or regional." },
-          { "text": "Regional citrate, since it's 'regional' and shouldn't affect systemic bleeding.", "correct": false, "feedback": "Citrate does not cause systemic anticoagulation in the way heparin does, so it's not contraindicated by bleeding per se — but in an actively bleeding, haemodynamically tenuous post-cardiotomy patient, avoiding any additional circuit complexity and running no-anticoagulation is the more conservative and common choice." }
+          { "text": "Regional citrate, if the unit has an approved protocol and the patient can be monitored for citrate complications.", "correct": true, "feedback": "Correct. Regional citrate avoids systemic anticoagulation and is generally preferred to heparin in a patient with active bleeding. No anticoagulation is reasonable when citrate is unsuitable or unavailable." },
+          { "text": "Systemic heparin because filter life takes priority over bleeding risk.", "correct": false, "feedback": "Systemic heparin adds avoidable bleeding risk. Use regional citrate when suitable, or no anticoagulation if citrate cannot be used." }
         ]
       },
       {
-        "prompt": "Filter clots after 5 hours despite no anticoagulation. What's the trade-off you accepted, and what do you check before the next filter?",
+      "prompt": "If citrate is unavailable and the circuit is run without anticoagulation, the filter clots after 5 hours. What should be checked before the next filter?",
         "options": [
           { "text": "Shorter filter life is the expected trade-off for avoiding anticoagulation in active bleeding — check filtration fraction and consider more pre-dilution or higher Qb.", "correct": true, "feedback": "Correct. This is the trade-off the no-anticoagulation strategy makes explicitly, and it's the right trade to accept here." },
           { "text": "This means no-anticoagulation was the wrong call and heparin should be started now.", "correct": false, "feedback": "The bleeding risk hasn't changed — a clotted filter is an expected cost of this strategy, not evidence it was wrong. Reassess FF and flow settings before reaching for anticoagulation." }
         ]
       }
     ],
-    "debrief": "Bleeding risk drives anticoagulation choice as much as filter longevity does. No-anticoagulation with optimised flow and dilution settings is the correct default here, even knowing it costs filter life."
+    "debrief": "Active bleeding argues strongly against systemic heparin. Regional citrate is preferred when a validated protocol and monitoring are available. No anticoagulation is a reasonable fallback, with shorter filter life expected."
   },
   {
     "id": "case-4-hit",
@@ -151,7 +151,7 @@
       {
         "prompt": "Day 2, still on the same effluent dose: phosphate is now 0.4 mmol/L (low). What do you do?",
         "options": [
-          { "text": "This is expected — near-universal hypophosphataemia by 24–48h on CRRT. Switch to a phosphate-containing solution or add separate IV replacement, and increase monitoring frequency.", "correct": true, "feedback": "Correct. The same clearance that was helpful on day 0 becomes a liability by day 2 if the solution isn't adjusted — this is the expected trajectory, not a surprise." },
+          { "text": "This is a common CRRT complication. Switch to a phosphate-containing solution or add separate replacement, and increase monitoring frequency.", "correct": true, "feedback": "Correct. The same clearance that was helpful on day 0 can become a liability once phosphate normalises or falls." },
           { "text": "Continue the same solution and recheck in 48 hours.", "correct": false, "feedback": "Waiting 48 hours risks clinically significant hypophosphataemia (weakness, respiratory muscle dysfunction, arrhythmia). This needs action now and closer monitoring, not a delayed recheck." }
         ]
       }

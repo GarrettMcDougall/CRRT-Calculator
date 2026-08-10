@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "reviewed": false,
+  "units": "All electrolytes are normalized to mmol/L. For monovalent ions, mmol/L equals mEq/L; divalent-ion values were converted from mEq/L where needed.",
+  "brands": [
+    {
+      "id": "vantive",
+      "label": "Vantive / Baxter / Gambro",
+      "platform": "PrisMax / Prismaflex",
+      "products": [
+        {"id":"prismasol-bgk-0-2-5","name":"PrismaSol BGK 0/2.5","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":0,"calcium":1.25,"magnesium":0.75,"chloride":109,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":100},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasol-bgk-4-2-5","name":"PrismaSol BGK 4/2.5","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":1.25,"magnesium":0.75,"chloride":113,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":100},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasol-bgk-2-3-5","name":"PrismaSol BGK 2/3.5","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":2,"calcium":1.75,"magnesium":0.5,"chloride":111.5,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":100},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasol-bgk-2-0","name":"PrismaSol BGK 2/0","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":2,"calcium":0,"magnesium":0.5,"chloride":108,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":100},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasol-b22gk-4-0","name":"PrismaSol B22GK 4/0","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":0,"magnesium":0.75,"chloride":120.5,"bicarbonate":22,"phosphate":0,"lactate":3,"glucose_mg_dL":100},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasol-bk-0-0-1-2","name":"PrismaSol BK 0/0/1.2","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":0,"calcium":0,"magnesium":0.6,"chloride":106.2,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":0},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasol-bgk-4-0-1-2","name":"PrismaSol BGK 4/0/1.2","family":"PrismaSol","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":0,"magnesium":0.6,"chloride":110.2,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":100},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"phoxillum-bk-4-2-5","name":"Phoxillum BK 4/2.5","family":"Phoxillum","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":1.25,"magnesium":0.75,"chloride":114.5,"bicarbonate":32,"phosphate":1,"lactate":0,"glucose_mg_dL":0},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"phoxillum-b22k-4-0","name":"Phoxillum B22K 4/0","family":"Phoxillum","roles":["replacement"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":0,"magnesium":0.75,"chloride":122,"bicarbonate":22,"phosphate":1,"lactate":0,"glucose_mg_dL":0},"source":"Vantive PrismaSol/Phoxillum prescribing information"},
+        {"id":"prismasate-bgk-4-2-5","name":"PrismaSATE BGK 4/2.5","family":"PrismaSATE","roles":["dialysate"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":1.25,"magnesium":0.75,"chloride":113,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":110},"source":"Project product reference; current IFU requires final bag-label verification"},
+        {"id":"prismasate-bk-0-3-5","name":"PrismaSATE BK 0/3.5","family":"PrismaSATE","roles":["dialysate"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":0,"calcium":1.75,"magnesium":0.5,"chloride":109.5,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":0},"source":"Project product reference; current IFU requires final bag-label verification"},
+        {"id":"prismasate-bgk-2-0","name":"PrismaSATE BGK 2/0","family":"PrismaSATE","roles":["dialysate"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":2,"calcium":0,"magnesium":0.5,"chloride":108,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":110},"source":"Project product reference; current IFU requires final bag-label verification"},
+        {"id":"prismasate-bgk-4-0-1-2","name":"PrismaSATE BGK 4/0/1.2","family":"PrismaSATE","roles":["dialysate"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":0,"magnesium":0.6,"chloride":110.2,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":110},"source":"Project product reference; current IFU requires final bag-label verification"},
+        {"id":"prismasate-b22gk-4-0","name":"PrismaSATE B22GK 4/0","family":"PrismaSATE","roles":["dialysate"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":4,"calcium":0,"magnesium":0.75,"chloride":120.5,"bicarbonate":22,"phosphate":0,"lactate":3,"glucose_mg_dL":110},"source":"Project product reference; current IFU requires final bag-label verification"},
+        {"id":"prismasate-bk-2-0","name":"PrismaSATE BK 2/0","family":"PrismaSATE","roles":["dialysate"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":2,"calcium":0,"magnesium":0.5,"chloride":108,"bicarbonate":32,"phosphate":0,"lactate":3,"glucose_mg_dL":0},"source":"Project product reference; current IFU requires final bag-label verification"},
+        {"id":"prismocitrate-18-0","name":"Prismocitrate 18/0","family":"Prismocitrate","roles":["citrate"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":140,"citrate":18},"source":"Product concentration supplied in project reference; verify current local monograph"},
+        {"id":"regiocit","name":"Regiocit","family":"Regiocit","roles":["citrate"],"regions":["CA","EU"],"compositionVerified":true,"composition":{"sodium":140,"potassium":0,"calcium":0,"magnesium":0,"citrate":18},"source":"Product concentration supplied in project reference; verify current local monograph"},
+        {"id":"acd-a","name":"ACD-A","family":"Generic citrate","roles":["citrate"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":225,"citrate":113},"source":"Total citrate concentration, trisodium citrate plus citric acid; off-label CRRT use"},
+        {"id":"tsc-4-percent","name":"4% trisodium citrate, compounded","family":"Compounded","roles":["citrate"],"regions":["CA","US","EU"],"compositionVerified":true,"composition":{"sodium":408,"citrate":136},"source":"Approximate concentration; pharmacy formulation must be confirmed"}
+      ]
+    },
+    {
+      "id":"fresenius","label":"Fresenius Medical Care","platform":"multiFiltrate / multiFiltrate PRO","products":[
+        {"id":"cica-dialysate-k2","name":"Ci-Ca Dialysate K2","family":"Ci-Ca","roles":["dialysate"],"regions":["EU"],"compositionVerified":true,"composition":{"sodium":133,"potassium":2,"calcium":0,"magnesium":0.75,"chloride":116.5,"bicarbonate":20,"phosphate":0,"glucose_mmol_L":5.55},"source":"Fresenius Ci-Ca Dialysate K2 IFU"},
+        {"id":"cica-citrate-4-percent","name":"Ci-Ca sodium citrate 4%","family":"Ci-Ca","roles":["citrate"],"regions":["EU"],"compositionVerified":true,"composition":{"sodium":408,"citrate":136},"source":"Fresenius Ci-Ca system; verify local product and module configuration"},
+        {"id":"multibic-k0","name":"multiBic potassium-free","family":"multiBic","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."},
+        {"id":"multibic-k2","name":"multiBic K2","family":"multiBic","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."},
+        {"id":"multibic-k4","name":"multiBic K4","family":"multiBic","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."},
+        {"id":"multiplus","name":"multiPlus","family":"multiPlus","roles":["replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."}
+      ]
+    },
+    {
+      "id":"bbraun","label":"B. Braun","platform":"Diapact CRRT","products":[
+        {"id":"duosol-k0","name":"Duosol K0","family":"Duosol","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."},
+        {"id":"duosol-k2","name":"Duosol K2","family":"Duosol","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."},
+        {"id":"duosol-k4","name":"Duosol K4","family":"Duosol","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"Exact current post-mix composition not verified."},
+        {"id":"biphozyl-k4","name":"Biphozyl K4","family":"Biphozyl","roles":["dialysate","replacement"],"regions":["EU"],"compositionVerified":false,"reason":"K 4, phosphate 1 and calcium-free are known, but the full current composition has not been verified."}
+      ]
+    },
+    {
+      "id":"dsi","label":"Dialysis Solutions Inc. (DSI)","platform":"Locally compounded CRRT fluid","products":[
+        {"id":"normocarb-hf25","name":"Normocarb HF 25","family":"Normocarb HF","roles":["dialysate","replacement"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":0,"calcium":0,"magnesium":0.75,"chloride":116.5,"bicarbonate":25,"phosphate":0},"source":"US FDA 510(k) K050827; final solution after required dilution"},
+        {"id":"normocarb-hf35","name":"Normocarb HF 35","family":"Normocarb HF","roles":["dialysate","replacement"],"regions":["CA","US"],"compositionVerified":true,"composition":{"sodium":140,"potassium":0,"calcium":0,"magnesium":0.75,"chloride":106.5,"bicarbonate":35,"phosphate":0},"source":"US FDA 510(k) K050827; final solution after required dilution"},
+        {"id":"normocarb","name":"Normocarb 35","family":"Normocarb","roles":["dialysate","replacement"],"regions":["CA"],"compositionVerified":false,"reason":"Current product-specific final composition and preparation instructions not verified."}
+      ]
+    }
+  ]
+}

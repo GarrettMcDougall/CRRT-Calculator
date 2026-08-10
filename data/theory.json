@@ -26,7 +26,7 @@
     "highYield": [
       "Effluent volume/kg/hr is the clearance surrogate; it is not the same as prescribed, corrected, or delivered dose.",
       "RENAL and ATN: no benefit from higher-intensity CRRT beyond ~25 mL/kg/hr.",
-      "KDIGO target is 20–25 mL/kg/hr delivered — prescribe 25–30 to absorb downtime."
+      "KDIGO target is 20–25 mL/kg/hr delivered. Calculate the prescribed rate from expected uptime and any pre-dilution rather than using a fixed 25–30 rule."
     ]
   },
   {
@@ -80,7 +80,7 @@
     "reviewed": false,
     "body": [
       "The extracorporeal circuit clots because blood contacts a foreign, thrombogenic surface (contact activation of the intrinsic pathway), meets an air-blood interface in the deaeration chamber, and slows or stagnates in areas of turbulence or low flow — worse with a high filtration fraction concentrating cells and proteins at the filter.",
-      "Regional citrate anticoagulation confines anticoagulation to the circuit (chelating calcium pre-filter, replacing it systemically) and, in head-to-head trials and meta-analyses, extends filter life and reduces bleeding compared with systemic heparin. KDIGO now recommends citrate as first-line for patients without a specific contraindication (severe liver failure, inability to metabolise citrate load).",
+      "Regional citrate anticoagulation confines anticoagulation to the circuit (chelating calcium pre-filter, replacing it systemically) and extends filter life while reducing bleeding compared with systemic heparin. KDIGO recommends citrate when available and suitable. Severe liver failure or shock increases accumulation risk and requires protocol-specific assessment and close monitoring rather than a simplistic absolute rule.",
       "Systemic heparin remains reasonable where citrate is unavailable, where the learning curve or monitoring infrastructure isn't in place, or in patients where citrate metabolism is a concern. A no-anticoagulation strategy — higher blood flow, pre-dilution, minimising circuit interruptions — is the right default in active bleeding or a high bleeding risk, accepting shorter filter life as the trade-off."
     ],
     "highYield": [
@@ -109,12 +109,12 @@
     "title": "Fluid management",
     "reviewed": false,
     "body": [
-      "Net ultrafiltration (net UF) is the fluid that actually leaves the patient per hour — the number that matters for the patient's fluid balance. Total ultrafiltration is net UF plus post-dilution replacement volume — the volume that actually crosses the membrane, which matters for filtration fraction and filter stress, but is not the same as what the patient loses.",
+      "Net ultrafiltration (net UF) is the fluid removed from the patient per hour. Total ultrafiltration is net UF plus all pre- and post-filter replacement fluid that must cross the membrane. It matters for filtration fraction and filter stress, but it is not the patient's net fluid loss.",
       "Faster net UF removes fluid faster but at the cost of intravascular refill time — pull faster than plasma refills from the interstitium and you get haemodynamic instability. Observational data associate high net UF rates with mortality, though this is confounded (sicker patients tolerate less UF and also do worse).",
       "The practical approach is to match the net UF rate to what the patient's haemodynamics can tolerate at that moment — reassessed frequently — rather than fixing a rate to hit a 24-hour fluid balance target regardless of trend."
     ],
     "highYield": [
-      "Net UF = what leaves the patient; total UF = what crosses the membrane (net UF + post-dilution replacement). Not the same number.",
+      "Net UF = patient fluid removal; total UF = net UF plus pre- and post-filter replacement crossing the membrane. They are not the same number.",
       "Faster net UF risks outpacing plasma refill → hypotension.",
       "Titrate net UF to haemodynamic tolerance in real time, not to a fixed 24-hour target."
     ]
@@ -124,7 +124,7 @@
     "title": "Complications",
     "reviewed": false,
     "body": [
-      "Hypophosphataemia is near-universal after 24–48 hours of CRRT at conventional dose, because phosphate is small and freely filtered/dialysed — expect it and either use a phosphate-containing solution or replace separately, monitoring at least daily (more often in the first 48 hours or at high dose).",
+      "Hypophosphataemia is common during CRRT because phosphate is readily filtered and dialysed, especially with phosphate-free solutions and longer treatment. Anticipate it, use a phosphate-containing solution or separate replacement when indicated, and follow the local monitoring schedule.",
       "Hypomagnesaemia is common too, more so with citrate (citrate chelates magnesium as well as calcium, to a lesser degree). Hypothermia is expected from large volumes of room-temperature or refrigerated fluid crossing an external circuit — most machines have an in-line warmer, but core temperature should still be tracked.",
       "CRRT clears many renally-cleared drugs — antimicrobials especially — at rates that don't match standard renal dosing tables, which are built for stable CKD, not a 20–30 mL/kg/hr extracorporeal circuit; dosing needs a pharmacist or a CRRT-specific reference, not extrapolation. Watch also for catheter complications (malposition, thrombosis, infection), bleeding (anticoagulation-related or otherwise), filter membrane reactions (rare, but consider with a new bioincompatible-membrane exposure), and dextrose/glucose effects from citrate- or lactate-buffered solutions."
     ],

@@ -4,7 +4,15 @@
 
   "dose": {
     "targetDeliveredDose_mL_kg_hr": { "min": 20, "max": 25, "reviewed": false },
-    "prescribeToAbsorbDowntime_mL_kg_hr": { "min": 25, "max": 30, "reviewed": false }
+    "defaultTargetDeliveredDose_mL_kg_hr": 22.5,
+    "defaultExpectedUptimeFraction": 0.90,
+    "reviewed": false
+  },
+
+  "circuit": {
+    "bloodFlow_mL_min": { "default": 150, "typicalMin": 100, "typicalMax": 200, "reviewed": false },
+    "filtrationFractionPreferredMax": 0.20,
+    "reviewed": false
   },
 
   "filtrationFraction": {
@@ -14,16 +22,16 @@
   },
 
   "citrate": {
-    "targetDose_mmol_L": { "default": 3.0, "min": 2.0, "max": 5.0, "reviewed": false },
+    "targetDose_mmol_L": { "default": 3.0, "min": 3.0, "max": 4.0, "reviewed": false },
     "postFilterICaTarget_mmol_L": { "min": 0.25, "max": 0.35, "reviewed": false },
     "systemicICaTarget_mmol_L": { "min": 1.10, "max": 1.30, "reviewed": false },
     "accumulationRatioThreshold": 2.5,
     "effluentTotalCa_mmol_L_default": 1.5,
     "presets": [
-      { "id": "acda", "label": "ACD-A", "citrateConcentration_mmol_L": 113, "isPreFilterDiluent": false, "source": "manufacturer monograph — verify locally", "reviewed": false },
+      { "id": "acda", "label": "ACD-A", "citrateConcentration_mmol_L": 113, "isPreFilterDiluent": true, "source": "manufacturer monograph — verify locally", "reviewed": false },
       { "id": "prismocitrate_18_0", "label": "Prismocitrate 18/0", "citrateConcentration_mmol_L": 18, "isPreFilterDiluent": true, "source": "manufacturer monograph — verify locally", "reviewed": false },
-      { "id": "tsc_4pct", "label": "4% trisodium citrate", "citrateConcentration_mmol_L": 136, "isPreFilterDiluent": false, "source": "manufacturer monograph — verify locally", "reviewed": false },
-      { "id": "custom", "label": "Custom", "citrateConcentration_mmol_L": null, "isPreFilterDiluent": null, "source": "user-entered", "reviewed": false }
+      { "id": "tsc_4pct", "label": "4% trisodium citrate", "citrateConcentration_mmol_L": 136, "isPreFilterDiluent": true, "source": "manufacturer monograph — verify locally", "reviewed": false },
+      { "id": "custom", "label": "Custom", "citrateConcentration_mmol_L": null, "isPreFilterDiluent": true, "source": "user-entered", "reviewed": false }
     ],
     "calciumTitrationTable": {
       "_note": "Placeholder structure. Replace rows with your site's approved nomogram.",
@@ -46,7 +54,7 @@
   },
 
   "heparin": {
-    "bolusUnitsPerKg": { "default": 25, "min": 0, "max": 30, "reviewed": false },
+    "bolusUnits": { "default": 750, "min": 0, "max": 1000, "reviewed": false },
     "infusionUnitsPerKgHr": { "default": 7.5, "min": 5, "max": 10, "reviewed": false },
     "targets": {
       "aPTT_s": { "min": 45, "max": 60, "reviewed": false },
