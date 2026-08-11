@@ -103,9 +103,21 @@
     window.scrollTo(0, 0);
   }
 
+  async function renderVersionTag() {
+    const el = document.getElementById('version-tag');
+    if (!el) return;
+    const info = await window.CRRTStore.loadVersion();
+    if (!info || !info.version) {
+      el.textContent = 'Version unknown — could not load version.json';
+      return;
+    }
+    el.textContent = `v${info.version}` + (info.released ? ` · released ${info.released}` : '');
+  }
+
   window.addEventListener('hashchange', route);
   window.addEventListener('DOMContentLoaded', () => {
     enableAutomaticUpdates();
+    renderVersionTag();
     route();
   });
 })();

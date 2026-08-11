@@ -67,5 +67,21 @@ window.CRRTStore = (function () {
     }
   }
 
-  return { get, set, resetAll, loadConfig, loadData };
+  /**
+   * version.json is the one file whose whole purpose is telling the person
+   * whether they're looking at a stale copy — so this always bypasses any
+   * HTTP cache (cache: 'no-store'), independent of what the service worker
+   * or browser would otherwise do, and is never memoized across calls.
+   */
+  async function loadVersion() {
+    try {
+      const res = await fetch('version.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  return { get, set, resetAll, loadConfig, loadData, loadVersion };
 })();
