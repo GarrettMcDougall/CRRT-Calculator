@@ -188,6 +188,40 @@
   });
   check('K: suggested delivered dose is near 22.5', K.predictedDeliveredDose_mL_kg_hr, 22.5, 0.8);
   check('K: suggested FF is at or below 20%', K.predictedFiltrationFraction <= 0.205 ? 1 : 0, 1, 0);
+  check('K: target reported as achieved', K.targetAchieved === true ? 1 : 0, 1, 0);
+
+  // --- K2: FF ceiling must hold across modalities, weights and blood flows ---
+  // Regression guard: an earlier version hit the dose target by pushing
+  // filtration fraction to 30-90%, which is not physiologically deliverable.
+  const K2cases = [
+    { weightKg: 80, modality: 'CVVH', bloodFlow_mL_min: 150 },
+    { weightKg: 120, modality: 'CVVH', bloodFlow_mL_min: 150 },
+    { weightKg: 150, modality: 'CVVH', bloodFlow_mL_min: 100 },
+    { weightKg: 80, modality: 'CVVH', bloodFlow_mL_min: 100 },
+    { weightKg: 80, modality: 'CVVH', hematocrit: 0.45 },
+    { weightKg: 80, modality: 'CVVH', netUltrafiltration_mL_hr: 300 },
+    { weightKg: 150, modality: 'CVVHDF', bloodFlow_mL_min: 100 },
+    { weightKg: 80, modality: 'CVVHDF', citrateFlow_mL_hr: 1500 },
+    { weightKg: 40, modality: 'CVVH' },
+    { weightKg: 80, modality: 'CVVHD' },
+  ];
+  let k2Breaches = 0;
+  let k2Unwarned = 0;
+  K2cases.forEach(cfg => {
+    const s = C.suggestPrescription(Object.assign({ hematocrit: 0.30, uptimeFraction: 0.90 }, cfg));
+    if (!(s.predictedFiltrationFraction <= 0.205)) k2Breaches++;
+    if (s.targetAchieved === false && (!s.warnings || s.warnings.length === 0)) k2Unwarned++;
+    if (s.replacementPre_mL_hr < 0 || s.replacementPost_mL_hr < 0 || s.dialysateFlow_mL_hr < 0) k2Unwarned++;
+  });
+  check('K2: no FF breach across 10 modality/weight/flow combinations', k2Breaches, 0, 0);
+  check('K2: every unachievable target carries a warning', k2Unwarned, 0, 0);
+
+  // --- K3: net UF alone above the ceiling must warn, not silently pass ---
+  const K3 = C.suggestPrescription({
+    weightKg: 70, modality: 'SCUF', bloodFlow_mL_min: 80,
+    hematocrit: 0.45, netUltrafiltration_mL_hr: 800, uptimeFraction: 0.90,
+  });
+  check('K3: impossible net UF at low Qb produces a warning', K3.warnings.length > 0 ? 1 : 0, 1, 0);
 
   // --- Dosing-weight helper ---
   const L = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'male' });
