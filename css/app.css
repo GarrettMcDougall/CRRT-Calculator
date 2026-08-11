@@ -366,6 +366,22 @@ details.working .formula { font-family: var(--font-mono); background: var(--grou
 .composition-grid span { white-space: nowrap; }
 select option:disabled { color: var(--muted); }
 
+.setup-card { border-top: 3px solid var(--citrate); }
+.setup-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-3);
+  background: var(--panel-raised);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-small);
+}
+.setup-summary span { padding-right: var(--sp-3); border-right: 1px solid var(--hairline); }
+.setup-summary span:last-child { border-right: 0; }
+.weight-guidance { margin-top: calc(-1 * var(--sp-2)); margin-bottom: var(--sp-3); }
+input[readonly] { opacity: 0.82; cursor: default; }
+
 /* ---------- Utility ---------- */
 .muted { color: var(--muted); }
 .small { font-size: var(--fs-small); }

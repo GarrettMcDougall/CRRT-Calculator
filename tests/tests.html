@@ -189,6 +189,14 @@
   check('K: suggested delivered dose is near 22.5', K.predictedDeliveredDose_mL_kg_hr, 22.5, 0.8);
   check('K: suggested FF is at or below 20%', K.predictedFiltrationFraction <= 0.205 ? 1 : 0, 1, 0);
 
+  // --- Dosing-weight helper ---
+  const L = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'male' });
+  check('L: BMI calculation', L.bmi, 37.04, 0.02);
+  check('L: Devine male IBW', L.ibwKg, 75.0, 0.1);
+  check('L: adjusted body weight', L.adjustedBodyWeightKg, 93.0, 0.1);
+  const Lunspecified = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'unspecified' });
+  check('L: no IBW assumption when formula unspecified', Lunspecified.ibwKg === null ? 1 : 0, 1, 0);
+
   // --- Acid-base pattern discrimination (§3.2 three-way) ---
   check(
     'Acid-base: alkalosis pattern',

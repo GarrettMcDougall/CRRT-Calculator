@@ -13,7 +13,9 @@ window.CRRTUICalculator = (function () {
 
   // ---- module state (clinical inputs — never persisted to localStorage) ----
   let state = {
+    actualWeightKg: 80,
     weightKg: 80,
+    weightBasis: 'actual',
     heightCm: null,
     sex: 'unspecified',
     hematocrit: 0.30,
@@ -26,6 +28,8 @@ window.CRRTUICalculator = (function () {
     nonCRRTIntake_mL_hr: 0,
     uptimeFraction: 0.90,
     targetDeliveredDose_mL_kg_hr: 22.5,
+    setupGenerated: false,
+    machineEdited: false,
 
     anticoag: 'citrate', // 'citrate' | 'heparin' | 'none'
 
@@ -74,6 +78,27 @@ window.CRRTUICalculator = (function () {
 
   function el(id) { return document.getElementById(id); }
 
+  function currentWeightMetrics() {
+    return C.computeBMIAndAdjustedWeight({
+      weightKg: num(state.actualWeightKg),
+      heightCm: state.heightCm,
+      sex: state.sex,
+    });
+  }
+
+  function syncDosingWeight() {
+    const metrics = currentWeightMetrics();
+    if (state.weightBasis === 'actual') state.weightKg = num(state.actualWeightKg);
+    if (state.weightBasis === 'ideal') {
+      if (metrics.ibwKg) state.weightKg = metrics.ibwKg;
+      else { state.weightBasis = 'actual'; state.weightKg = num(state.actualWeightKg); }
+    }
+    if (state.weightBasis === 'adjusted') {
+      if (metrics.adjustedBodyWeightKg) state.weightKg = metrics.adjustedBodyWeightKg;
+      else { state.weightBasis = 'actual'; state.weightKg = num(state.actualWeightKg); }
+    }
+  }
+
   // -----------------------------------------------------------------------
   async function mount(root) {
     if (!CONFIG) CONFIG = await window.CRRTStore.loadConfig();
@@ -97,7 +122,7 @@ window.CRRTUICalculator = (function () {
       nonCRRTIntake_mL_hr: state.nonCRRTIntake_mL_hr,
     });
 
-    const bmi = C.computeBMIAndAdjustedWeight({ weightKg: state.weightKg, heightCm: state.heightCm, sex: state.sex });
+    const bmi = C.computeBMIAndAdjustedWeight({ weightKg: state.actualWeightKg, heightCm: state.heightCm, sex: state.sex });
     const suggestion = C.suggestPrescription({
       weightKg: state.weightKg,
       hematocrit: state.hematocrit,
@@ -127,10 +152,9 @@ window.CRRTUICalculator = (function () {
 
       <div class="grid-2">
         <div>
+          ${renderSetupCard(bmi, suggestion)}
           ${renderPlatformCard()}
-          ${renderGuidanceCard(suggestion)}
-          ${renderCircuitCard(dose, bmi)}
-          ${renderAnticoagSelector()}
+          ${renderCircuitCard(dose)}
           ${state.anticoag === 'citrate' ? renderCitratePanel(dose) : ''}
           ${state.anticoag === 'heparin' ? renderHeparinPanel() : ''}
           ${state.anticoag === 'none' ? renderNoAnticoagPanel() : ''}
@@ -192,8 +216,10 @@ window.CRRTUICalculator = (function () {
     const brand = selectedBrand();
     return `
       <div class="card">
-        <span class="eyebrow">Start with your institution's supply chain</span>
-        <h2>Region, brand &amp; platform</h2>
+        <div class="card-title-row">
+          <div><span class="eyebrow">Step 2</span><h2>Select the institution's platform</h2></div>
+          <button type="button" class="primary" id="generatePrescription" ${state.modality === 'SCUF' ? 'disabled' : ''}>${state.setupGenerated ? 'Recalculate flows' : 'Generate starting prescription'}</button>
+        </div>
         <div class="input-row">
           <div class="field">
             <label for="marketRegion">Market</label>
@@ -213,27 +239,92 @@ window.CRRTUICalculator = (function () {
       </div>`;
   }
 
-  function renderGuidanceCard(s) {
-    const rows = state.modality === 'SCUF'
-      ? `<div class="guidance-item"><strong>SCUF</strong><span>Set net fluid removal from the clinical fluid goal and haemodynamic tolerance. Solute-dose targeting does not apply.</span></div>`
-      : `
-        <div class="guidance-item"><strong>Qb ${fmt(s.bloodFlow_mL_min, 0)} mL/min</strong><span>A common adult starting point. Adjust for catheter performance and local machine limits.</span></div>
-        ${state.modality !== 'CVVH' ? `<div class="guidance-item"><strong>Dialysate ${fmt(s.dialysateFlow_mL_hr, 0)} mL/hr</strong><span>Supplies the diffusive share of the target clearance.</span></div>` : ''}
-        ${state.modality !== 'CVVHD' ? `<div class="guidance-item"><strong>Replacement ${fmt(s.replacementPre_mL_hr, 0)} pre + ${fmt(s.replacementPost_mL_hr, 0)} post mL/hr</strong><span>Uses post-dilution for efficiency, then adds pre-dilution only when needed to limit filtration fraction.</span></div>` : ''}
-        <div class="guidance-item"><strong>Predicted delivered dose ${fmt(s.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr</strong><span>Accounts for ${fmt((1 - state.uptimeFraction) * 100, 0)}% downtime and pre-filter dilution.</span></div>`;
+  function renderSetupCard(bmi, suggestion) {
+    const downtimePercent = (1 - num(state.uptimeFraction, 0.9)) * 100;
+    const basePrescribedTarget = num(state.uptimeFraction) > 0
+      ? num(state.targetDeliveredDose_mL_kg_hr) / num(state.uptimeFraction)
+      : null;
+    const weightHelp = bmi.bmi === null
+      ? 'Use the unit-approved dosing weight. Add height and an IBW formula if ideal or adjusted weight is being considered.'
+      : bmi.bmi >= 30
+        ? `BMI ${fmt(bmi.bmi)}. In high BMI, ideal or adjusted weight may avoid excessive initial CRRT dose. ${bmi.ibwKg ? `IBW ${fmt(bmi.ibwKg)} kg; adjusted weight ${fmt(bmi.adjustedBodyWeightKg)} kg.` : 'Select an IBW formula to calculate alternatives.'}`
+        : `BMI ${fmt(bmi.bmi)}. Actual or pre-illness weight is generally used unless the local protocol specifies another basis.`;
 
     return `
-      <div class="card guidance-card">
-        <div class="card-title-row"><div><span class="eyebrow">Guided start</span><h2>Suggested starting flows</h2></div><button type="button" class="primary" id="applySuggestion" ${state.modality === 'SCUF' ? 'disabled' : ''}>Use these flows</button></div>
+      <div class="card guidance-card setup-card">
+        <span class="eyebrow">Step 1</span>
+        <h2>Define the treatment target</h2>
+
+        <label>Anticoagulation strategy</label>
+        <div class="btn-group" id="anticoagGroup">
+          <button type="button" class="btn-toggle mod-citrate ${state.anticoag === 'citrate' ? 'selected' : ''}" data-anticoag="citrate">Regional citrate</button>
+          <button type="button" class="btn-toggle mod-heparin ${state.anticoag === 'heparin' ? 'selected' : ''}" data-anticoag="heparin">Systemic heparin</button>
+          <button type="button" class="btn-toggle mod-none ${state.anticoag === 'none' ? 'selected' : ''}" data-anticoag="none">No anticoagulation</button>
+        </div>
+
+        <div class="input-row mt-4">
+          <div class="field">
+            <label for="actualWeightKg">Actual weight <span class="unit">kg</span></label>
+            <input type="number" id="actualWeightKg" value="${state.actualWeightKg}" min="1" step="0.5">
+          </div>
+          <div class="field">
+            <label for="heightCm">Height <span class="unit">cm, optional</span></label>
+            <input type="number" id="heightCm" value="${state.heightCm ?? ''}" min="100" max="230" step="1">
+          </div>
+          <div class="field">
+            <label for="sex">IBW formula</label>
+            <select id="sex">
+              <option value="unspecified" ${state.sex === 'unspecified' ? 'selected' : ''}>Not selected</option>
+              <option value="male" ${state.sex === 'male' ? 'selected' : ''}>Devine male</option>
+              <option value="female" ${state.sex === 'female' ? 'selected' : ''}>Devine female</option>
+            </select>
+          </div>
+        </div>
+
         <div class="input-row">
+          <div class="field">
+            <label for="weightBasis">Dosing-weight basis</label>
+            <select id="weightBasis">
+              <option value="actual" ${state.weightBasis === 'actual' ? 'selected' : ''}>Actual weight</option>
+              <option value="ideal" ${state.weightBasis === 'ideal' ? 'selected' : ''} ${bmi.ibwKg ? '' : 'disabled'}>Ideal body weight${bmi.ibwKg ? `, ${fmt(bmi.ibwKg)} kg` : ''}</option>
+              <option value="adjusted" ${state.weightBasis === 'adjusted' ? 'selected' : ''} ${bmi.adjustedBodyWeightKg ? '' : 'disabled'}>Adjusted body weight${bmi.adjustedBodyWeightKg ? `, ${fmt(bmi.adjustedBodyWeightKg)} kg` : ''}</option>
+              <option value="custom" ${state.weightBasis === 'custom' ? 'selected' : ''}>Custom dosing weight</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="weightKg">Dosing weight <span class="unit">kg</span></label>
+            <input type="number" id="weightKg" value="${state.weightKg}" min="1" step="0.5" ${state.weightBasis === 'custom' ? '' : 'readonly'}>
+          </div>
+        </div>
+        <div class="field-help weight-guidance">${weightHelp} The 2026 KDIGO AKI guideline remains a public-review draft; follow the locally approved method.</div>
+
+        <div class="input-row mt-4">
+          <div class="field">
+            <label for="hematocrit">Hematocrit <span class="unit">fraction</span></label>
+            <input type="number" id="hematocrit" value="${state.hematocrit}" min="0.1" max="0.6" step="0.01">
+            <div class="field-help">Used to estimate plasma flow and filtration fraction.</div>
+          </div>
           <div class="field">
             <label for="targetDeliveredDose">Target delivered dose <span class="unit">mL/kg/hr</span></label>
             <input type="number" id="targetDeliveredDose" value="${state.targetDeliveredDose_mL_kg_hr}" min="10" max="40" step="0.5">
-            <div class="field-help">20–25 is the guideline range for routine adult AKI. Higher intensity has not improved outcomes.</div>
+            <div class="field-help">Routine adult AKI target: 20–25 delivered.</div>
+          </div>
+          <div class="field">
+            <label for="downtimePercent">Expected downtime <span class="unit">%</span></label>
+            <input type="number" id="downtimePercent" value="${fmt(downtimePercent, 0)}" min="0" max="50" step="1">
+            <div class="field-help">Use your unit's observed downtime. Default 10%.</div>
           </div>
         </div>
-        <div class="guidance-grid">${rows}</div>
-        <p class="small muted">${s.rationale} Net UF remains a separate clinical decision and is not increased to reach the clearance target.</p>
+
+        <label>Modality</label>
+        <div class="btn-group" id="modalityGroup">
+          ${['CVVHDF', 'CVVHD', 'CVVH', 'SCUF'].map(m => `<button type="button" class="btn-toggle ${state.modality === m ? 'selected' : ''}" data-modality="${m}">${m}</button>`).join('')}
+        </div>
+
+        ${state.modality === 'SCUF'
+          ? '<div class="warning-inline">SCUF targets fluid removal rather than a delivered small-solute dose. Set net UF in the editable prescription below.</div>'
+          : `<div class="setup-summary"><span>Delivered target <strong>${fmt(num(state.targetDeliveredDose_mL_kg_hr))}</strong></span><span>Downtime <strong>${fmt(downtimePercent, 0)}%</strong></span><span>Downtime-only target <strong>${fmt(basePrescribedTarget)} mL/kg/hr</strong></span></div>
+             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>`}
       </div>`;
   }
 
@@ -250,36 +341,16 @@ window.CRRTUICalculator = (function () {
   }
 
   // -----------------------------------------------------------------------
-  function renderCircuitCard(dose, bmi) {
+  function renderCircuitCard(dose) {
     return `
     <div class="card">
-      <h2>Circuit &amp; dose</h2>
-      <div class="input-row">
-        <div class="field">
-          <label for="weightKg">Weight <span class="unit">kg</span></label>
-          <input type="number" id="weightKg" value="${state.weightKg}" min="1" step="0.5">
-          <div class="field-help">Use the unit-approved dosing weight. In BMI ≥30, compare ideal or adjusted weight to avoid excessive dose.</div>
-        </div>
-        <div class="field">
-          <label for="heightCm">Height <span class="unit">cm (optional)</span></label>
-          <input type="number" id="heightCm" value="${state.heightCm ?? ''}" min="0" step="1">
-        </div>
-        <div class="field">
-          <label for="hematocrit">Hematocrit <span class="unit">fraction</span></label>
-          <input type="number" id="hematocrit" value="${state.hematocrit}" min="0.1" max="0.6" step="0.01">
-          <div class="field-help">Used to estimate plasma flow and filtration fraction.</div>
-        </div>
-      </div>
-
-      ${bmi.bmi ? `
-        <div class="warning-inline">
-          BMI ${fmt(bmi.bmi)}. ${bmi.bmi >= 30 ? `The KDIGO 2026 public-review draft permits ideal or adjusted weight for initial dosing in high BMI. Adjusted body weight ≈ <strong>${fmt(bmi.adjustedBodyWeightKg)} kg</strong>. Confirm your unit's method.` : 'Actual weight is commonly used, subject to local protocol.'}
-        </div>` : ''}
-
-      <label>Modality</label>
-      <div class="btn-group" id="modalityGroup">
-        ${['CVVH', 'CVVHD', 'CVVHDF', 'SCUF'].map(m => `<button type="button" class="btn-toggle ${state.modality === m ? 'selected' : ''}" data-modality="${m}">${m}</button>`).join('')}
-      </div>
+      <span class="eyebrow">Step 3</span>
+      <h2>Review and edit machine settings</h2>
+      ${state.setupGenerated ? `
+        <div class="guidance-grid">
+          <div class="guidance-item"><strong>Generated for ${fmt(state.weightKg)} kg</strong><span>${state.modality}, ${state.anticoag === 'citrate' ? 'regional citrate' : state.anticoag === 'heparin' ? 'systemic heparin' : 'no anticoagulation'}.</span></div>
+          <div class="guidance-item"><strong>${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr current</strong><span>Includes ${fmt((1 - state.uptimeFraction) * 100, 0)}% downtime and pre-filter dilution.${state.machineEdited ? ' Machine settings have been edited.' : ''}</span></div>
+        </div>` : '<div class="warning-inline">The fields below remain editable. Use Generate starting prescription above to replace them with calculated starting values.</div>'}
 
       <div class="input-row mt-4">
         <div class="field">
@@ -296,7 +367,7 @@ window.CRRTUICalculator = (function () {
       </div>
       ${state.bloodFlow_mL_min > 250 ? `<div class="warning-inline">Qb > 250 mL/min — access-dependent; confirm catheter and access pressure limits.</div>` : ''}
 
-      <div class="input-row">
+      ${state.modality !== 'CVVHD' && state.modality !== 'SCUF' ? `<div class="input-row">
         <div class="field">
           <label for="replacementPre">Pre-dilution replacement <span class="unit">mL/hr</span></label>
           <input type="number" id="replacementPre" value="${state.replacementPre_mL_hr}" min="0" step="50">
@@ -307,7 +378,7 @@ window.CRRTUICalculator = (function () {
           <input type="number" id="replacementPost" value="${state.replacementPost_mL_hr}" min="0" step="50">
           <div class="field-help">More clearance-efficient, but increases haemoconcentration when FF rises.</div>
         </div>
-      </div>
+      </div>` : ''}
 
       <div class="input-row">
         <div class="field">
@@ -319,11 +390,6 @@ window.CRRTUICalculator = (function () {
           <label for="nonCRRTIntake">Other fluid intake <span class="unit">mL/hr (optional)</span></label>
           <input type="number" id="nonCRRTIntake" value="${state.nonCRRTIntake_mL_hr}" min="0" step="10">
           <div class="field-help">Optional hourly intake estimate. It does not include urine, drains, or other outputs.</div>
-        </div>
-        <div class="field">
-          <label for="uptime">Expected uptime <span class="unit">fraction (1.0 = no downtime)</span></label>
-          <input type="number" id="uptime" value="${state.uptimeFraction}" min="0.1" max="1" step="0.01">
-          <div class="field-help">0.90 is a reasonable planning assumption. Replace it with your unit's observed delivery.</div>
         </div>
       </div>
 
@@ -516,7 +582,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
   // -----------------------------------------------------------------------
   function renderHeparinPanel() {
     const h = C.computeHeparinDosing({
-      weightKg: state.weightKg,
+      weightKg: state.actualWeightKg,
       bolusUnits: state.bolusUnits,
       infusionUnitsPerKgHr: state.infusionUnitsPerKgHr,
       heparinConcentration_units_mL: state.heparinConcentration_units_mL,
@@ -530,7 +596,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
 
       <div class="input-row">
         <div class="field"><label for="bolusUnits">Bolus <span class="unit">units</span></label><input type="number" id="bolusUnits" value="${state.bolusUnits}" min="0" max="1000" step="50"><div class="field-help">Generic starting range 500–1000 units. Use 0 when the bolus is unsafe and follow the local protocol.</div></div>
-        <div class="field"><label for="infusionUnitsPerKgHr">Infusion <span class="unit">U/kg/hr</span></label><input type="number" id="infusionUnitsPerKgHr" value="${state.infusionUnitsPerKgHr}" min="0" max="15" step="0.5"></div>
+        <div class="field"><label for="infusionUnitsPerKgHr">Infusion <span class="unit">U/kg/hr actual weight</span></label><input type="number" id="infusionUnitsPerKgHr" value="${state.infusionUnitsPerKgHr}" min="0" max="15" step="0.5"></div>
         <div class="field"><label for="heparinConc">Solution concentration <span class="unit">U/mL</span></label><input type="number" id="heparinConc" value="${state.heparinConcentration_units_mL}" min="1" step="1"></div>
       </div>
 
@@ -671,7 +737,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
 
   // -----------------------------------------------------------------------
   function wireEvents(root) {
-    const bind = (id, key, isFloat = true, transform = null) => {
+    const bind = (id, key, isFloat = true, transform = null, onUpdate = null) => {
       const node = el(id);
       if (!node) return;
       const readValue = () => {
@@ -684,27 +750,49 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
         // Preserve focus while typing. The previous full re-render on every
         // keystroke made multi-digit entry effectively impossible.
         state[key] = readValue();
+        if (onUpdate) onUpdate();
       });
       node.addEventListener('change', () => {
         state[key] = readValue();
+        if (onUpdate) onUpdate();
         render(root);
       });
     };
 
-    bind('targetDeliveredDose', 'targetDeliveredDose_mL_kg_hr');
-    bind('weightKg', 'weightKg');
-    bind('heightCm', 'heightCm', true, v => v === '' ? null : parseFloat(v));
-    bind('hematocrit', 'hematocrit');
-    bind('bloodFlow', 'bloodFlow_mL_min');
-    bind('dialysateFlow', 'dialysateFlow_mL_hr');
-    bind('replacementPre', 'replacementPre_mL_hr');
-    bind('replacementPost', 'replacementPost_mL_hr');
-    bind('netUF', 'netUltrafiltration_mL_hr');
-    bind('nonCRRTIntake', 'nonCRRTIntake_mL_hr');
-    bind('uptime', 'uptimeFraction');
+    const setupChanged = () => { state.setupGenerated = false; };
+    const weightInputsChanged = () => { syncDosingWeight(); setupChanged(); };
 
-    const applySuggestion = el('applySuggestion');
-    if (applySuggestion) applySuggestion.addEventListener('click', () => {
+    bind('targetDeliveredDose', 'targetDeliveredDose_mL_kg_hr', true, null, setupChanged);
+    bind('actualWeightKg', 'actualWeightKg', true, null, weightInputsChanged);
+    bind('weightKg', 'weightKg', true, null, setupChanged);
+    bind('heightCm', 'heightCm', true, v => v === '' ? null : parseFloat(v), weightInputsChanged);
+    bind('hematocrit', 'hematocrit', true, null, setupChanged);
+    bind('downtimePercent', 'uptimeFraction', true, v => 1 - Math.min(50, Math.max(0, num(v))) / 100, setupChanged);
+    const machineChanged = () => { if (state.setupGenerated) state.machineEdited = true; };
+    bind('bloodFlow', 'bloodFlow_mL_min', true, null, machineChanged);
+    bind('dialysateFlow', 'dialysateFlow_mL_hr', true, null, machineChanged);
+    bind('replacementPre', 'replacementPre_mL_hr', true, null, machineChanged);
+    bind('replacementPost', 'replacementPost_mL_hr', true, null, machineChanged);
+    bind('netUF', 'netUltrafiltration_mL_hr', true, null, machineChanged);
+    bind('nonCRRTIntake', 'nonCRRTIntake_mL_hr', true, null, machineChanged);
+    const sex = el('sex');
+    if (sex) sex.addEventListener('change', () => {
+      state.sex = sex.value;
+      syncDosingWeight();
+      state.setupGenerated = false;
+      render(root);
+    });
+
+    const weightBasis = el('weightBasis');
+    if (weightBasis) weightBasis.addEventListener('change', () => {
+      state.weightBasis = weightBasis.value;
+      syncDosingWeight();
+      state.setupGenerated = false;
+      render(root);
+    });
+
+    const generatePrescription = el('generatePrescription');
+    if (generatePrescription) generatePrescription.addEventListener('click', () => {
       const suggestion = C.suggestPrescription({
         weightKg: num(state.weightKg),
         hematocrit: num(state.hematocrit),
@@ -720,26 +808,30 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       state.dialysateFlow_mL_hr = suggestion.dialysateFlow_mL_hr;
       state.replacementPre_mL_hr = suggestion.replacementPre_mL_hr;
       state.replacementPost_mL_hr = suggestion.replacementPost_mL_hr;
+      state.setupGenerated = true;
+      state.machineEdited = false;
       render(root);
     });
 
     root.querySelectorAll('[data-modality]').forEach(btn => {
-      btn.addEventListener('click', () => { state.modality = btn.dataset.modality; render(root); });
+      btn.addEventListener('click', () => { state.modality = btn.dataset.modality; state.setupGenerated = false; render(root); });
     });
     root.querySelectorAll('[data-anticoag]').forEach(btn => {
-      btn.addEventListener('click', () => { state.anticoag = btn.dataset.anticoag; render(root); });
+      btn.addEventListener('click', () => { state.anticoag = btn.dataset.anticoag; state.setupGenerated = false; render(root); });
     });
 
     const marketRegion = el('marketRegion');
     if (marketRegion) marketRegion.addEventListener('change', () => {
       state.marketRegion = marketRegion.value;
       normalizeProductSelections();
+      state.setupGenerated = false;
       render(root);
     });
     const solutionBrand = el('solutionBrand');
     if (solutionBrand) solutionBrand.addEventListener('change', () => {
       state.solutionBrand = solutionBrand.value;
       normalizeProductSelections();
+      state.setupGenerated = false;
       render(root);
     });
 
@@ -783,6 +875,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
           state.citrateConcentration_mmol_L = product.composition.citrate;
           state.citrateFlow_mL_hr = null;
         }
+        if (state.setupGenerated) state.machineEdited = true;
         render(root);
       });
     });

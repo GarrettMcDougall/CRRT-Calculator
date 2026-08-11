@@ -205,6 +205,10 @@
     const heightM = heightCm / 100;
     const bmi = weightKg / (heightM * heightM);
 
+    if (sex !== 'male' && sex !== 'female') {
+      return { bmi, ibwKg: null, adjustedBodyWeightKg: null };
+    }
+
     // Devine IBW (kg): assumes heightCm > 152.4
     const heightIn = heightCm / 2.54;
     const inchesOver5ft = Math.max(0, heightIn - 60);
@@ -212,7 +216,6 @@
     if (sex === 'female') {
       ibwKg = 45.5 + 2.3 * inchesOver5ft;
     } else {
-      // default to male coefficient if unspecified — UI must let user pick
       ibwKg = 50 + 2.3 * inchesOver5ft;
     }
     const adjustedBodyWeightKg = ibwKg + 0.4 * (weightKg - ibwKg);
