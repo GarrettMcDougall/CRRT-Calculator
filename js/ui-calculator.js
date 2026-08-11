@@ -72,7 +72,9 @@ window.CRRTUICalculator = (function () {
   }
 
   function fmt(v, digits = 1) {
-    if (v === null || v === undefined || Number.isNaN(v)) return '—';
+    // Number.isFinite() also rejects Infinity, which a zero weight, zero blood
+    // flow or zero solution concentration would otherwise surface to the user.
+    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
     return v.toFixed(digits);
   }
 
@@ -324,7 +326,13 @@ window.CRRTUICalculator = (function () {
         ${state.modality === 'SCUF'
           ? '<div class="warning-inline">SCUF targets fluid removal rather than a delivered small-solute dose. Set net UF in the editable prescription below.</div>'
           : `<div class="setup-summary"><span>Delivered target <strong>${fmt(num(state.targetDeliveredDose_mL_kg_hr))}</strong></span><span>Downtime <strong>${fmt(downtimePercent, 0)}%</strong></span><span>Downtime-only target <strong>${fmt(basePrescribedTarget)} mL/kg/hr</strong></span></div>
-             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>`}
+             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered at FF ${fmt(suggestion.predictedFiltrationFraction * 100)}%.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>
+             ${state.setupGenerated && suggestion.targetAchieved === false
+               ? `<div class="warning-inline hard"><strong>Target dose not reached.</strong> Flows are capped by the filtration-fraction ceiling, so the generated prescription delivers ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr rather than the ${fmt(num(state.targetDeliveredDose_mL_kg_hr))} requested.</div>`
+               : ''}
+             ${state.setupGenerated && suggestion.warnings && suggestion.warnings.length
+               ? suggestion.warnings.map(w => `<div class="warning-inline">${w}</div>`).join('')
+               : ''}`}
       </div>`;
   }
 
