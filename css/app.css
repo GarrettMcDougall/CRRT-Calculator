@@ -66,10 +66,26 @@ footer.safety-footer {
   opacity: 0.7;
 }
 
-/* Sodium safety row: force both fields to the same width so they align */
+/* Force equal-width columns so adjacent input fields align vertically */
+.aligned-row { align-items: flex-start; }
+.aligned-row .field { flex: 1 1 0; min-width: 0; }
+.aligned-row .field input,
+.aligned-row .field select { width: 100%; }
+
+/* Sodium safety row specific */
 .sodium-row { align-items: flex-start; }
 .sodium-row .field { flex: 1; min-width: 0; }
 .sodium-row .field input { width: 100%; }
+
+/* Generate prescription button: full-width centered below the selects */
+.generate-btn-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--sp-4);
+}
+.generate-btn-wrap .primary {
+  min-width: 240px;
+}
 
 /* ---------- Shell / nav ---------- */
 .app-shell { display: flex; min-height: 100vh; flex-direction: column; }
