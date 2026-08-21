@@ -1,6 +1,6 @@
 This repository contains two kinds of content under different licenses.
 
-1. CODE (all .html, .css, .js files) — MIT License
+1. CODE (all .html, .css, .js files): MIT License
 
 Copyright (c) 2026 the repository owner
 
@@ -26,8 +26,8 @@ not intended to be used as, or as a substitute for, professional medical
 advice, diagnosis, or treatment, or for direct patient care decisions
 without independent verification against institutional protocols.
 
-2. EDUCATIONAL CONTENT (data/*.json — theory text, cases, quiz questions,
-   troubleshooting scenarios) — Creative Commons Attribution-NonCommercial-
+2. EDUCATIONAL CONTENT (data/*.json: theory text, cases, quiz questions,
+   troubleshooting scenarios): Creative Commons Attribution-NonCommercial-
    ShareAlike 4.0 International (CC BY-NC-SA 4.0)
 
    Full license text: https://creativecommons.org/licenses/by-nc-sa/4.0/
