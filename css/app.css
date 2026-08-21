@@ -66,6 +66,11 @@ footer.safety-footer {
   opacity: 0.7;
 }
 
+/* Sodium safety row: force both fields to the same width so they align */
+.sodium-row { align-items: flex-start; }
+.sodium-row .field { flex: 1; min-width: 0; }
+.sodium-row .field input { width: 100%; }
+
 /* ---------- Shell / nav ---------- */
 .app-shell { display: flex; min-height: 100vh; flex-direction: column; }
 
