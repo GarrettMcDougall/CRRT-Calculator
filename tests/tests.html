@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>CRRT calc.js — test suite</title>
+<title>CRRT calc.js: test suite</title>
 <style>
   body { font-family: ui-monospace, "IBM Plex Mono", monospace; background: #12161A; color: #E8E4DC; padding: 2rem; }
   .pass { color: #3FB8AF; }
@@ -14,7 +14,7 @@
 </style>
 </head>
 <body>
-<h1>CRRT calc.js — worked example test suite (spec §7)</h1>
+<h1>CRRT calc.js: worked example test suite (spec §7)</h1>
 <div id="results"></div>
 <div id="summary"></div>
 
@@ -190,33 +190,32 @@
   check('K: suggested FF is at or below 20%', K.predictedFiltrationFraction <= 0.205 ? 1 : 0, 1, 0);
   check('K: target reported as achieved', K.targetAchieved === true ? 1 : 0, 1, 0);
 
-  // --- K2: FF ceiling must hold across modalities, weights and blood flows ---
-  // Regression guard: an earlier version hit the dose target by pushing
-  // filtration fraction to 30-90%, which is not physiologically deliverable.
+  // --- K2: FF ceiling must hold across modalities, weights, and blood flows ---
+  // Regression guard: the previous suggestPrescription hit the dose target by
+  // pushing filtration fraction to 30-90%, which is not physiologically safe.
   const K2cases = [
-    { weightKg: 80, modality: 'CVVH', bloodFlow_mL_min: 150 },
-    { weightKg: 120, modality: 'CVVH', bloodFlow_mL_min: 150 },
-    { weightKg: 150, modality: 'CVVH', bloodFlow_mL_min: 100 },
-    { weightKg: 80, modality: 'CVVH', bloodFlow_mL_min: 100 },
-    { weightKg: 80, modality: 'CVVH', hematocrit: 0.45 },
-    { weightKg: 80, modality: 'CVVH', netUltrafiltration_mL_hr: 300 },
+    { weightKg: 80,  modality: 'CVVH',   bloodFlow_mL_min: 150 },
+    { weightKg: 120, modality: 'CVVH',   bloodFlow_mL_min: 150 },
+    { weightKg: 150, modality: 'CVVH',   bloodFlow_mL_min: 100 },
+    { weightKg: 80,  modality: 'CVVH',   bloodFlow_mL_min: 100 },
+    { weightKg: 80,  modality: 'CVVH',   hematocrit: 0.45 },
+    { weightKg: 80,  modality: 'CVVH',   netUltrafiltration_mL_hr: 300 },
     { weightKg: 150, modality: 'CVVHDF', bloodFlow_mL_min: 100 },
-    { weightKg: 80, modality: 'CVVHDF', citrateFlow_mL_hr: 1500 },
-    { weightKg: 40, modality: 'CVVH' },
-    { weightKg: 80, modality: 'CVVHD' },
+    { weightKg: 80,  modality: 'CVVHDF', citrateFlow_mL_hr: 1500 },
+    { weightKg: 40,  modality: 'CVVH' },
+    { weightKg: 80,  modality: 'CVVHD' },
   ];
-  let k2Breaches = 0;
-  let k2Unwarned = 0;
+  let k2Breaches = 0, k2Unwarned = 0;
   K2cases.forEach(cfg => {
     const s = C.suggestPrescription(Object.assign({ hematocrit: 0.30, uptimeFraction: 0.90 }, cfg));
-    if (!(s.predictedFiltrationFraction <= 0.205)) k2Breaches++;
+    if (Number.isFinite(s.predictedFiltrationFraction) && s.predictedFiltrationFraction > 0.205) k2Breaches++;
     if (s.targetAchieved === false && (!s.warnings || s.warnings.length === 0)) k2Unwarned++;
     if (s.replacementPre_mL_hr < 0 || s.replacementPost_mL_hr < 0 || s.dialysateFlow_mL_hr < 0) k2Unwarned++;
   });
   check('K2: no FF breach across 10 modality/weight/flow combinations', k2Breaches, 0, 0);
   check('K2: every unachievable target carries a warning', k2Unwarned, 0, 0);
 
-  // --- K3: net UF alone above the ceiling must warn, not silently pass ---
+  // --- K3: net UF alone above ceiling must warn, not silently pass ---
   const K3 = C.suggestPrescription({
     weightKg: 70, modality: 'SCUF', bloodFlow_mL_min: 80,
     hematocrit: 0.45, netUltrafiltration_mL_hr: 800, uptimeFraction: 0.90,
@@ -253,7 +252,7 @@
   results.forEach(r => {
     const div = document.createElement('div');
     div.className = 'case' + (r.ok ? '' : ' fail-case');
-    div.innerHTML = `<span class="${r.ok ? 'pass' : 'fail'}">${r.ok ? 'PASS' : 'FAIL'}</span> — ${r.label} ` +
+    div.innerHTML = `<span class="${r.ok ? 'pass' : 'fail'}">${r.ok ? 'PASS' : 'FAIL'}</span>: ${r.label} ` +
       `(actual: ${typeof r.actual === 'number' ? r.actual.toFixed(4) : r.actual}, expected: ${r.expected})`;
     resultsEl.appendChild(div);
   });
