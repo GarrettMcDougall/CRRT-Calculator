@@ -33,7 +33,7 @@ window.CRRTUITheory = (function () {
         <h3>High yield</h3>
         <ul>${s.highYield.map(h => `<li>${h}</li>`).join('')}</ul>
       </div>
-      ${!s.reviewed ? `<p class="small muted mt-4">⚠ Unreviewed content — verify against current guidelines/local protocol.</p>` : ''}
+      ${!s.reviewed ? `<p class="small muted mt-4">⚠ Unreviewed content: verify against current guidelines/local protocol.</p>` : ''}
     </div>`;
   }
 

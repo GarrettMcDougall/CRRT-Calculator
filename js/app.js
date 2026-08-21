@@ -45,7 +45,7 @@
       <div class="card">
         <h2>Local protocol config</h2>
         <p class="small muted">This app reads <code>config/local-protocol.json</code> at runtime. Fork this repository and edit that file to set your site's approved targets, solution presets, and titration tables.</p>
-        <p><span class="flag ${config.reviewed ? 'green' : 'red'}">${config.reviewed ? 'reviewed' : 'unreviewed'}</span> — the config's top-level <code>reviewed</code> flag.</p>
+        <p><span class="flag ${config.reviewed ? 'green' : 'red'}">${config.reviewed ? 'reviewed' : 'unreviewed'}</span>: the config's top-level <code>reviewed</code> flag.</p>
         <details class="working">
           <summary>View raw config</summary>
           <div class="formula">${JSON.stringify(config, null, 2).replace(/</g, '&lt;')}</div>
@@ -60,7 +60,7 @@
       </div>
       <div class="card">
         <h2>Teaching progress</h2>
-        <p class="small muted">Case completion and quiz stats are stored locally in your browser only — nothing is uploaded.</p>
+        <p class="small muted">Case completion and quiz stats are stored locally in your browser only. Nothing is uploaded.</p>
         <button class="secondary" id="resetProgress">Reset teaching progress</button>
       </div>
     `;
@@ -108,7 +108,7 @@
     if (!el) return;
     const info = await window.CRRTStore.loadVersion();
     if (!info || !info.version) {
-      el.textContent = 'Version unknown — could not load version.json';
+      el.textContent = 'Version unknown: could not load version.json';
       return;
     }
     el.textContent = `v${info.version}` + (info.released ? ` · released ${info.released}` : '');

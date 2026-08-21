@@ -1,5 +1,5 @@
 /**
- * schematic.js — renders the live circuit SVG shared by the Prescribe
+ * schematic.js: renders the live circuit SVG shared by the Prescribe
  * calculator and the troubleshooting simulator. Pure function: state in,
  * SVG markup out. No DOM writes here.
  */
@@ -29,8 +29,7 @@ window.CRRTSchematic = (function () {
       alarm = null,
     } = s;
 
-    const safeQb = Number.isFinite(qb_mL_min) ? qb_mL_min : 0;
-    const lineWidth = clamp(2 + safeQb / 60, 2, 8).toFixed(1);
+    const lineWidth = clamp(2 + qb_mL_min / 60, 2, 8).toFixed(1);
     const filterColor = ff > 0.30 ? 'var(--alarm)' : ff > 0.25 ? 'var(--amber)' : `var(${accentVar})`;
 
     const zoneStroke = (zone) => (alarm && alarm.zone === zone ? 'var(--alarm)' : 'var(--hairline)');
@@ -57,7 +56,7 @@ window.CRRTSchematic = (function () {
   <!-- Pump -->
   <circle cx="180" cy="165" r="20" class="box"/>
   <text x="180" y="169" text-anchor="middle" class="lbl">Qb</text>
-  <text x="180" y="200" text-anchor="middle" class="lbl">${Number.isFinite(qb_mL_min) ? qb_mL_min : '—'} mL/min</text>
+  <text x="180" y="200" text-anchor="middle" class="lbl">${qb_mL_min} mL/min</text>
 
   <!-- Pre-filter port -->
   <line x1="200" y1="165" x2="260" y2="165" stroke="var(--hairline)" stroke-width="${lineWidth}"/>
@@ -67,7 +66,7 @@ window.CRRTSchematic = (function () {
   <!-- Filter -->
   <rect x="260" y="130" width="60" height="70" rx="6" fill="${filterColor}" opacity="0.18" stroke="${filterColor}" stroke-width="2"/>
   <text x="290" y="169" text-anchor="middle" class="lbl" fill="${filterColor}">filter</text>
-  <text x="290" y="215" text-anchor="middle" class="lbl">FF ${Number.isFinite(ff) ? (ff * 100).toFixed(1) + '%' : '—'}</text>
+  <text x="290" y="215" text-anchor="middle" class="lbl">FF ${(ff * 100).toFixed(1)}%</text>
 
   <!-- Effluent line -->
   <line x1="290" y1="200" x2="290" y2="270" stroke="${zoneStroke('effluent')}" stroke-width="2"/>
@@ -92,9 +91,9 @@ window.CRRTSchematic = (function () {
   <text x="535" y="184" text-anchor="middle" class="lbl">Patient</text>
 
   ${pressures ? `
-  <text x="125" y="230" text-anchor="middle" class="lbl">${pressures.access ?? '—'} mmHg</text>
-  <text x="290" y="230" text-anchor="middle" class="lbl">TMP ${pressures.tmp ?? '—'} mmHg</text>
-  <text x="464" y="230" text-anchor="middle" class="lbl">${pressures.returnP ?? '—'} mmHg</text>
+  <text x="125" y="230" text-anchor="middle" class="lbl">${pressures.access ?? '–'} mmHg</text>
+  <text x="290" y="230" text-anchor="middle" class="lbl">TMP ${pressures.tmp ?? '–'} mmHg</text>
+  <text x="464" y="230" text-anchor="middle" class="lbl">${pressures.returnP ?? '–'} mmHg</text>
   ` : ''}
 </svg>`;
   }

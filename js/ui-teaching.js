@@ -33,7 +33,7 @@ window.CRRTUITeaching = (function () {
         </a>
         <a href="#/learn/troubleshoot" class="card" style="text-decoration:none;color:inherit;display:block;">
           <h3>Troubleshooting simulator</h3>
-          <p class="small muted">Interactive circuit — localise the alarm before you see the answer.</p>
+          <p class="small muted">Interactive circuit: localise the alarm before you see the answer.</p>
         </a>
         <a href="#/learn/quiz" class="card" style="text-decoration:none;color:inherit;display:block;">
           <h3>Quiz</h3>
@@ -51,7 +51,7 @@ window.CRRTUITeaching = (function () {
       key: 'indication', title: 'Is CRRT indicated, and is it indicated now?',
       theoryLink: 'timing',
       options: [
-        { label: 'Refractory hyperkalaemia, severe acidosis, diuretic-refractory volume overload, uraemic complications, or select intoxications', order: 'Indication: trigger-based (see selected trigger)', why: 'STARRT-AKI and related trials found no benefit — and a signal of harm — from initiating by AKI stage alone. Watchful waiting with explicit trigger criteria is the current default.' },
+        { label: 'Refractory hyperkalaemia, severe acidosis, diuretic-refractory volume overload, uraemic complications, or select intoxications', order: 'Indication: trigger-based (see selected trigger)', why: 'STARRT-AKI and related trials found no benefit, and even a signal of harm, from initiating by AKI stage alone. Watchful waiting with explicit trigger criteria is the current default.' },
         { label: 'Rising creatinine / AKI stage alone, no trigger yet', order: 'Indication: AKI stage alone (reconsider)', why: 'This is the pattern the timing trials argue against. Consider watchful waiting with defined trigger criteria instead of acting on stage alone.' },
       ],
     },
@@ -59,8 +59,8 @@ window.CRRTUITeaching = (function () {
       key: 'crrtVsIhd', title: 'CRRT vs intermittent HD vs PIRRT?',
       theoryLink: 'modality',
       options: [
-        { label: 'CRRT — haemodynamically unstable or raised ICP/cerebral oedema', order: 'Modality class: CRRT', why: 'CRRT\'s slow, continuous solute and fluid removal is gentler on haemodynamics and cerebral perfusion than intermittent HD.' },
-        { label: 'Intermittent HD — stable, resource-limited setting', order: 'Modality class: Intermittent HD', why: 'A stable patient without ICP concerns can tolerate the faster shifts of intermittent HD, which is often more resource-efficient.' },
+        { label: 'CRRT: haemodynamically unstable or raised ICP/cerebral oedema', order: 'Modality class: CRRT', why: 'CRRT\'s slow, continuous solute and fluid removal is gentler on haemodynamics and cerebral perfusion than intermittent HD.' },
+        { label: 'Intermittent HD: stable, resource-limited setting', order: 'Modality class: Intermittent HD', why: 'A stable patient without ICP concerns can tolerate the faster shifts of intermittent HD, which is often more resource-efficient.' },
       ],
     },
     {
@@ -76,10 +76,10 @@ window.CRRTUITeaching = (function () {
       key: 'modality', title: 'Modality',
       theoryLink: 'modality',
       options: [
-        { label: 'CVVHDF — diffusion + convection', order: 'Modality: CVVHDF', why: 'No mortality difference vs CVVH/CVVHD; most units default here as a practical middle ground.' },
-        { label: 'CVVH — convection only', order: 'Modality: CVVH', why: 'Better theoretical middle-molecule clearance at high post-dilution rates, at the cost of filter life.' },
-        { label: 'CVVHD — diffusion only', order: 'Modality: CVVHD', why: 'Gentler on the filter for a given dose than high-rate CVVH.' },
-        { label: 'SCUF — fluid removal only', order: 'Modality: SCUF', why: 'Appropriate only when the sole goal is fluid removal in a metabolically stable patient — no meaningful solute clearance.' },
+        { label: 'CVVHDF: diffusion + convection', order: 'Modality: CVVHDF', why: 'No mortality difference vs CVVH/CVVHD; most units default here as a practical middle ground.' },
+        { label: 'CVVH: convection only', order: 'Modality: CVVH', why: 'Better theoretical middle-molecule clearance at high post-dilution rates, at the cost of filter life.' },
+        { label: 'CVVHD: diffusion only', order: 'Modality: CVVHD', why: 'Gentler on the filter for a given dose than high-rate CVVH.' },
+        { label: 'SCUF: fluid removal only', order: 'Modality: SCUF', why: 'Appropriate only when the sole goal is fluid removal in a metabolically stable patient, with no meaningful solute clearance.' },
       ],
     },
     {
@@ -96,7 +96,7 @@ window.CRRTUITeaching = (function () {
       options: [
         { label: 'Regional citrate when the protocol and monitoring are suitable', order: 'Anticoagulation: Regional citrate', why: 'KDIGO-preferred default because it improves filter life and reduces bleeding. Severe liver failure or shock raises accumulation risk and requires protocol-specific assessment and close monitoring.' },
         { label: 'Systemic heparin', order: 'Anticoagulation: Systemic heparin', why: 'Reasonable where citrate is unavailable or contraindicated.' },
-        { label: 'None — active bleeding or high bleeding risk', order: 'Anticoagulation: None (optimise flow/dilution instead)', why: 'The correct default with active bleeding — accept shorter filter life as the trade-off.' },
+        { label: 'None: active bleeding or high bleeding risk', order: 'Anticoagulation: None (optimise flow/dilution instead)', why: 'The correct default with active bleeding: accept shorter filter life as the trade-off.' },
       ],
     },
     {
@@ -117,7 +117,7 @@ window.CRRTUITeaching = (function () {
       key: 'monitoring', title: 'Monitoring',
       theoryLink: 'order-anatomy',
       options: [
-        { label: 'Set a lab schedule and pressure limits, and specify which parameters are nurse-titrated', order: 'Monitoring: lab schedule + pressure limits + titration parameters specified', why: 'A complete order includes titration boundaries for bedside-titrated parameters (commonly calcium rate, heparin rate) — not just a starting point.' },
+        { label: 'Set a lab schedule and pressure limits, and specify which parameters are nurse-titrated', order: 'Monitoring: lab schedule + pressure limits + titration parameters specified', why: 'A complete order includes titration boundaries for bedside-titrated parameters (commonly calcium rate, heparin rate), not just a starting point.' },
       ],
     },
   ];
@@ -140,7 +140,7 @@ window.CRRTUITeaching = (function () {
         <div class="card">
           <h2>Assembled order</h2>
           <div class="order-sheet">
-            ${BUILDER_STEPS.map(s => `<div class="item"><span class="k">${s.title}</span><span class="v">${builderState.order[s.key] || '—'}</span></div>`).join('')}
+            ${BUILDER_STEPS.map(s => `<div class="item"><span class="k">${s.title}</span><span class="v">${builderState.order[s.key] || '–'}</span></div>`).join('')}
           </div>
           <div class="mt-4">
             <button class="secondary" onclick="window.print()">Print order sheet</button>
@@ -399,7 +399,7 @@ window.CRRTUITeaching = (function () {
         });
         document.getElementById('quizFeedback').innerHTML = `
           <div class="feedback-box">
-            ${q.options.map(o => `<p><strong>${o.correct ? '✓' : '✗'}</strong> ${o.text} — ${o.explain}</p>`).join('')}
+            ${q.options.map(o => `<p><strong>${o.correct ? '✓' : '✗'}</strong> ${o.text}: ${o.explain}</p>`).join('')}
             <button class="primary mt-4" id="quizNext">${quizState.index + 1 < quizState.order.length ? 'Next' : 'See score'}</button>
           </div>`;
         document.getElementById('quizNext').addEventListener('click', () => {

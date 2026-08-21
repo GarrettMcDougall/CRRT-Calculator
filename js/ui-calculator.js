@@ -1,5 +1,5 @@
 /**
- * ui-calculator.js — the Prescribe mode. One continuous prescription
+ * ui-calculator.js: the Prescribe mode. One continuous prescription
  * builder: circuit & dose, then a modality-specific anticoagulation panel,
  * then solutions/electrolytes. Re-renders whole panel on any input change
  * (no framework, so this keeps state/DOM in sync simply and safely).
@@ -11,7 +11,7 @@ window.CRRTUICalculator = (function () {
   let CONFIG = null;
   let SOLUTIONS = null;
 
-  // ---- module state (clinical inputs — never persisted to localStorage) ----
+  // ---- module state (clinical inputs: never persisted to localStorage) ----
   let state = {
     actualWeightKg: 80,
     weightKg: 80,
@@ -72,9 +72,7 @@ window.CRRTUICalculator = (function () {
   }
 
   function fmt(v, digits = 1) {
-    // Number.isFinite() also rejects Infinity, which a zero weight, zero blood
-    // flow or zero solution concentration would otherwise surface to the user.
-    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+    if (v === null || v === undefined || Number.isNaN(v)) return '–';
     return v.toFixed(digits);
   }
 
@@ -150,7 +148,6 @@ window.CRRTUICalculator = (function () {
 
     root.innerHTML = `
       <h1>Prescribe</h1>
-      <p class="muted small">A continuous prescription builder — circuit and dose are coupled to anticoagulation and fluid removal below, because that's how they actually behave.</p>
 
       <div class="grid-2">
         <div>
@@ -228,7 +225,6 @@ window.CRRTUICalculator = (function () {
             <select id="marketRegion">
               ${[['CA','Canada'],['US','United States'],['EU','Europe'],['ALL','Show all markets']].map(([id,label]) => `<option value="${id}" ${state.marketRegion === id ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
-            <div class="field-help">This filters the catalogue, not live availability. Pharmacy must confirm what is stocked and approved locally.</div>
           </div>
           <div class="field">
             <label for="solutionBrand">Manufacturer / brand</label>
@@ -298,7 +294,7 @@ window.CRRTUICalculator = (function () {
             <input type="number" id="weightKg" value="${state.weightKg}" min="1" step="0.5" ${state.weightBasis === 'custom' ? '' : 'readonly'}>
           </div>
         </div>
-        <div class="field-help weight-guidance">${weightHelp} The 2026 KDIGO AKI guideline remains a public-review draft; follow the locally approved method.</div>
+        <div class="field-help weight-guidance">${weightHelp}</div>
 
         <div class="input-row mt-4">
           <div class="field">
@@ -326,13 +322,7 @@ window.CRRTUICalculator = (function () {
         ${state.modality === 'SCUF'
           ? '<div class="warning-inline">SCUF targets fluid removal rather than a delivered small-solute dose. Set net UF in the editable prescription below.</div>'
           : `<div class="setup-summary"><span>Delivered target <strong>${fmt(num(state.targetDeliveredDose_mL_kg_hr))}</strong></span><span>Downtime <strong>${fmt(downtimePercent, 0)}%</strong></span><span>Downtime-only target <strong>${fmt(basePrescribedTarget)} mL/kg/hr</strong></span></div>
-             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered at FF ${fmt(suggestion.predictedFiltrationFraction * 100)}%.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>
-             ${state.setupGenerated && suggestion.targetAchieved === false
-               ? `<div class="warning-inline hard"><strong>Target dose not reached.</strong> Flows are capped by the filtration-fraction ceiling, so the generated prescription delivers ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr rather than the ${fmt(num(state.targetDeliveredDose_mL_kg_hr))} requested.</div>`
-               : ''}
-             ${state.setupGenerated && suggestion.warnings && suggestion.warnings.length
-               ? suggestion.warnings.map(w => `<div class="warning-inline">${w}</div>`).join('')
-               : ''}`}
+             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>`}
       </div>`;
   }
 
@@ -373,7 +363,7 @@ window.CRRTUICalculator = (function () {
           <div class="field-help">Suggested by the guided panel from the remaining clearance requirement.</div>
         </div>` : ''}
       </div>
-      ${state.bloodFlow_mL_min > 250 ? `<div class="warning-inline">Qb > 250 mL/min — access-dependent; confirm catheter and access pressure limits.</div>` : ''}
+      ${state.bloodFlow_mL_min > 250 ? `<div class="warning-inline">Qb > 250 mL/min: access-dependent; confirm catheter and access pressure limits.</div>` : ''}
 
       ${state.modality !== 'CVVHD' && state.modality !== 'SCUF' ? `<div class="input-row">
         <div class="field">
@@ -481,14 +471,15 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
 
     const acidBaseCopy = {
       alkalosis: { title: 'Metabolic alkalosis', body: 'Excess citrate delivery relative to clearance/metabolism. Reduce citrate dose, increase effluent flow, or reduce dialysate bicarbonate.', cls: 'amber' },
-      acidosis_underbuffering: { title: 'Metabolic acidosis — under-buffering', body: 'Normal calcium ratio. Increase bicarbonate (dialysate or systemic).', cls: 'amber' },
-      acidosis_accumulation: { title: 'Metabolic acidosis — citrate accumulation', body: 'High calcium ratio. This is a metabolism failure, not under-buffering — reduce or stop citrate rather than adding buffer.', cls: 'red' },
+      acidosis_underbuffering: { title: 'Metabolic acidosis: under-buffering', body: 'Normal calcium ratio. Increase bicarbonate (dialysate or systemic).', cls: 'amber' },
+      acidosis_accumulation: { title: 'Metabolic acidosis: citrate accumulation', body: 'High calcium ratio. This is a metabolism failure, not under-buffering; reduce or stop citrate rather than adding buffer.', cls: 'red' },
       normal: { title: 'No acid-base concern flagged', body: '', cls: 'green' },
     };
 
     return `
     <div class="card accent-card mod-citrate">
       <h2><span class="tag">Citrate</span> Regional citrate anticoagulation</h2>
+      <p class="small muted">Please defer to local protocols and nomogram.</p>
       ${!citrateAvailable ? '<div class="warning-inline hard">No verified citrate product is selected. Choose the actual product in Solutions &amp; electrolytes before using any citrate-flow result.</div>' : ''}
 
       <div class="field">
@@ -514,7 +505,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
         <div class="output-row"><span class="label">Citrate infusion rate</span><span class="value big">${citrateAvailable ? `${fmt(citrateFlow)} mL/hr` : 'not available'}</span></div>
         <div class="output-row"><span class="label">Actual delivered dose</span><span class="value">${citrateAvailable ? `${fmt(doseCheck.actualCitrateDose_mmol_L, 2)} mmol/L <span class="flag ${doseCheck.doseFlag}">${doseCheck.doseFlag}</span>` : 'not available'}</span></div>
       </div>
-      ${state.citratePreFilter ? `<div class="warning-inline">This solution is counted as pre-filter (pre-dilution) fluid above — it changes effluent dose and the pre-dilution correction.</div>` : ''}
+      ${state.citratePreFilter ? `<div class="warning-inline">This solution is counted as pre-filter (pre-dilution) fluid above; it changes effluent dose and the pre-dilution correction.</div>` : ''}
 
       ${citrateAvailable ? `<details class="working">
         <summary>Show working</summary>
@@ -528,7 +519,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
         <div class="field">
           <label for="effluentTotalCa">Effluent total Ca <span class="unit">mmol/L (config default)</span></label>
           <input type="number" id="effluentTotalCa" value="${state.effluentTotalCa_mmol_L}" min="0" step="0.1">
-          <div class="field-help">Use only if your protocol supplies this estimate. The default is illustrative.</div>
+          <div class="field-help">Use only if your protocol supplies this estimate.</div>
         </div>
       </div>
       <div class="output-block">
@@ -559,7 +550,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
         <div class="field"><label for="pH">Arterial/venous pH</label><input type="number" id="pH" value="${state.pH}" step="0.01"></div>
         <div class="field"><label for="hco3">HCO₃⁻ <span class="unit">mmol/L</span></label><input type="number" id="hco3" value="${state.hco3_mmol_L}" step="0.5"></div>
       </div>
-      ${!accumulation ? `<div class="small muted">Enter total Ca and systemic iCa above to enable this panel — the calcium ratio is required to distinguish accumulation from under-buffering.</div>` : ''}
+      ${!accumulation ? `<div class="small muted">Enter total Ca and systemic iCa above to enable this panel. The calcium ratio is required to distinguish accumulation from under-buffering.</div>` : ''}
       ${acidBase ? `
       <div class="output-block accent-card mod-${acidBase === 'acidosis_accumulation' ? 'heparin' : 'citrate'}">
         <strong>${acidBaseCopy[acidBase].title}</strong>
@@ -626,7 +617,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
     return `
     <div class="card accent-card mod-none">
       <h2><span class="tag">None</span> No anticoagulation strategy</h2>
-      <p>Higher blood flow, pre-dilution replacement, and minimising circuit interruptions extend filter life without anticoagulation. Accept shorter filter life as the trade-off — this is the expected and correct cost of this strategy in active bleeding or high bleeding risk, not evidence the approach is wrong.</p>
+      <p>Higher blood flow, pre-dilution replacement, and minimising circuit interruptions extend filter life without anticoagulation. Accept shorter filter life as the trade-off: this is the expected and correct cost of this strategy in active bleeding or high bleeding risk, not evidence the approach is wrong.</p>
     </div>`;
   }
 
