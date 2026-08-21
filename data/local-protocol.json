@@ -1,0 +1,97 @@
+{
+  "_readme": "Fork this file and replace values with your unit's approved protocol. Every number here is a generic starting point, not a validated order. reviewed:false fields must be checked off before this app is used beyond personal study.",
+  "reviewed": false,
+
+  "dose": {
+    "targetDeliveredDose_mL_kg_hr": { "min": 20, "max": 25, "reviewed": false },
+    "defaultTargetDeliveredDose_mL_kg_hr": 22.5,
+    "defaultExpectedUptimeFraction": 0.90,
+    "reviewed": false
+  },
+
+  "circuit": {
+    "bloodFlow_mL_min": { "default": 150, "typicalMin": 100, "typicalMax": 200, "reviewed": false },
+    "filtrationFractionPreferredMax": 0.20,
+    "reviewed": false
+  },
+
+  "filtrationFraction": {
+    "amberThreshold": 0.25,
+    "redThreshold": 0.30,
+    "reviewed": false
+  },
+
+  "citrate": {
+    "targetDose_mmol_L": { "default": 3.0, "min": 3.0, "max": 4.0, "reviewed": false },
+    "postFilterICaTarget_mmol_L": { "min": 0.25, "max": 0.35, "reviewed": false },
+    "systemicICaTarget_mmol_L": { "min": 1.10, "max": 1.30, "reviewed": false },
+    "accumulationRatioThreshold": 2.5,
+    "effluentTotalCa_mmol_L_default": 1.5,
+    "presets": [
+      { "id": "acda", "label": "ACD-A", "citrateConcentration_mmol_L": 113, "isPreFilterDiluent": true, "source": "manufacturer monograph: verify locally", "reviewed": false },
+      { "id": "prismocitrate_18_0", "label": "Prismocitrate 18/0", "citrateConcentration_mmol_L": 18, "isPreFilterDiluent": true, "source": "manufacturer monograph: verify locally", "reviewed": false },
+      { "id": "tsc_4pct", "label": "4% trisodium citrate", "citrateConcentration_mmol_L": 136, "isPreFilterDiluent": true, "source": "manufacturer monograph: verify locally", "reviewed": false },
+      { "id": "custom", "label": "Custom", "citrateConcentration_mmol_L": null, "isPreFilterDiluent": true, "source": "user-entered", "reviewed": false }
+    ],
+    "calciumTitrationTable": {
+      "_note": "Placeholder structure. Replace rows with your site's approved nomogram.",
+      "bySystemicICa": [
+        { "systemicICa_mmol_L_below": 1.00, "action": "Increase calcium infusion by 20%", "reviewed": false },
+        { "systemicICa_mmol_L_below": 1.10, "action": "Increase calcium infusion by 10%", "reviewed": false },
+        { "systemicICa_range": [1.10, 1.30], "action": "No change", "reviewed": false },
+        { "systemicICa_mmol_L_above": 1.30, "action": "Decrease calcium infusion by 10%", "reviewed": false }
+      ],
+      "byPostFilterICa": [
+        { "postFilterICa_mmol_L_above": 0.40, "action": "Increase citrate dose by 0.2-0.3 mmol/L", "reviewed": false },
+        { "postFilterICa_range": [0.25, 0.35], "action": "No change", "reviewed": false },
+        { "postFilterICa_mmol_L_below": 0.25, "action": "Decrease citrate dose by 0.2-0.3 mmol/L; watch for over-anticoagulation", "reviewed": false }
+      ]
+    },
+    "calciumProducts": {
+      "cacl2_10pct": { "label": "Calcium chloride 10%", "concentration_mmol_mL": 0.68, "note": "Irritant: central line preferred", "reviewed": false },
+      "ca_gluconate_10pct": { "label": "Calcium gluconate 10%", "concentration_mmol_mL": 0.22, "note": "Peripherally safer, larger volume needed", "reviewed": false }
+    }
+  },
+
+  "heparin": {
+    "bolusUnits": { "default": 750, "min": 0, "max": 1000, "reviewed": false },
+    "infusionUnitsPerKgHr": { "default": 7.5, "min": 5, "max": 10, "reviewed": false },
+    "targets": {
+      "aPTT_s": { "min": 45, "max": 60, "reviewed": false },
+      "aPTTMultipleOfBaseline": 1.5,
+      "antiXa_IU_mL": { "min": 0.3, "max": 0.5, "reviewed": false }
+    },
+    "titrationTable": {
+      "_note": "Placeholder: replace with local nomogram.",
+      "byAPTT": [
+        { "aptt_s_below": 45, "action": "Increase infusion by 2 U/kg/hr", "reviewed": false },
+        { "aptt_range_s": [45, 60], "action": "No change", "reviewed": false },
+        { "aptt_s_above": 60, "action": "Hold 30 min, decrease infusion by 2 U/kg/hr", "reviewed": false },
+        { "aptt_s_above": 80, "action": "Hold 60 min, decrease infusion by 3 U/kg/hr, recheck in 6h", "reviewed": false }
+      ]
+    }
+  },
+
+  "electrolytes": {
+    "effluentTotalCa_mmol_L_default": 1.5,
+    "sodiumGradientWarnThreshold_mmol_L": 10,
+    "phosphateMonitoringMinFrequencyHours": 12,
+    "reviewed": false
+  },
+
+  "monitoring": {
+    "labs": [
+      { "test": "Electrolytes, ionised calcium (systemic + post-filter if citrate)", "frequencyHours": 6, "reviewed": false },
+      { "test": "Phosphate, magnesium", "frequencyHours": 12, "reviewed": false },
+      { "test": "aPTT (if heparin)", "frequencyHours": 6, "reviewed": false },
+      { "test": "ABG / venous gas, lactate", "frequencyHours": 12, "reviewed": false },
+      { "test": "CBC", "frequencyHours": 24, "reviewed": false }
+    ],
+    "pressureLimits": {
+      "_note": "Machine-specific: replace with your Prismaflex/PrisMax defaults.",
+      "access_mmHg": { "min": -250, "max": 0, "reviewed": false },
+      "return_mmHg": { "min": 0, "max": 350, "reviewed": false },
+      "TMP_mmHg": { "max": 300, "reviewed": false }
+    }
+  }
+}

@@ -1,9 +1,9 @@
 [
   {
     "id": "high-access-negative",
-    "alarm": "High access (arterial) pressure alarm — very negative",
+    "alarm": "High access (arterial) pressure alarm: very negative",
     "pressurePattern": { "access": "very negative (e.g. below -250 mmHg)", "filter": "normal or low", "return": "normal", "TMP": "normal" },
-    "localises": "Inflow problem — the pump can't pull blood in fast enough.",
+    "localises": "Inflow problem: the pump can't pull blood in fast enough.",
     "differential": [
       "Hypovolaemia / inadequate circulating volume",
       "Catheter malposition or kinking",
@@ -22,7 +22,7 @@
     "id": "high-return",
     "alarm": "High return (venous) pressure alarm",
     "pressurePattern": { "access": "normal", "filter": "normal or high", "return": "high", "TMP": "may be elevated" },
-    "localises": "Outflow obstruction — resistance to blood returning to the patient.",
+    "localises": "Outflow obstruction: resistance to blood returning to the patient.",
     "differential": [
       "Kink in the venous (return) limb of the circuit",
       "Clot in the venous limb or drip/deaeration chamber",
@@ -41,14 +41,14 @@
     "id": "rising-tmp",
     "alarm": "Rising transmembrane pressure (TMP)",
     "pressurePattern": { "access": "normal", "filter": "rising", "return": "normal or rising", "TMP": "progressively rising" },
-    "localises": "Membrane clotting or fouling — the machine is working harder to push fluid across the membrane.",
+    "localises": "Membrane clotting or fouling: the machine is working harder to push fluid across the membrane.",
     "differential": [
       "Progressive filter clotting (often with high filtration fraction as the upstream driver)",
       "Protein/lipid fouling of the membrane over time",
       "Inadequate anticoagulation for this patient/circuit"
     ],
     "firstActions": [
-      "Check filtration fraction — reduce post-filter replacement rate or shift replacement pre-filter",
+      "Check filtration fraction: reduce post-filter replacement rate or shift replacement pre-filter",
       "Increase blood flow if access allows",
       "Reassess anticoagulation adequacy (post-filter iCa if citrate; aPTT if heparin)",
       "Anticipate filter change if TMP continues to climb toward the machine's ceiling"
@@ -66,7 +66,7 @@
     ],
     "firstActions": [
       "Same anticoagulation reassessment as rising TMP",
-      "Prepare for filter change — a widening pressure drop with rising TMP together predict imminent clotting"
+      "Prepare for filter change: a widening pressure drop with rising TMP together predict imminent clotting"
     ],
     "reviewed": false
   },
@@ -81,7 +81,7 @@
       "Cracked tubing or connector"
     ],
     "firstActions": [
-      "The machine will auto-clamp the return line — do not bypass this",
+      "The machine will auto-clamp the return line: do not bypass this",
       "Inspect all connections systematically from access to return",
       "Do not resume until the air source is found and cleared"
     ],
@@ -91,13 +91,13 @@
     "id": "blood-leak",
     "alarm": "Blood leak detector alarm",
     "pressurePattern": { "access": "variable", "filter": "variable", "return": "variable", "TMP": "may be elevated preceding the leak" },
-    "localises": "Membrane rupture — blood cells crossing into the effluent.",
+    "localises": "Membrane rupture: blood cells crossing into the effluent.",
     "differential": [
       "Membrane fibre rupture, often after a period of high TMP",
       "False positive from haemolysis or pigmenturia"
     ],
     "firstActions": [
-      "Do not ignore or override — a true leak requires the circuit to be changed",
+      "Do not ignore or override: a true leak requires the circuit to be changed",
       "Inspect effluent visually for blood tinge",
       "If confirmed, change the circuit; the blood in the extracorporeal circuit is not returned"
     ],
@@ -105,9 +105,9 @@
   },
   {
     "id": "recirculation",
-    "alarm": "No alarm — delivered dose is lower than expected despite an unremarkable-looking prescription",
+    "alarm": "No alarm: delivered dose is lower than expected despite an unremarkable-looking prescription",
     "pressurePattern": { "access": "normal", "filter": "normal", "return": "normal", "TMP": "normal" },
-    "localises": "Return blood is being pulled back into the access lumen instead of reaching systemic circulation — silent, no alarm fires.",
+    "localises": "Return blood is being pulled back into the access lumen instead of reaching systemic circulation; it is silent, and no alarm fires.",
     "differential": [
       "Short or malpositioned catheter (classically a short femoral line)",
       "Catheter tip abutting a vessel wall",
@@ -122,12 +122,12 @@
   },
   {
     "id": "downtime-accounting",
-    "alarm": "Not an alarm — a planning concept",
+    "alarm": "Not an alarm: a planning concept",
     "pressurePattern": null,
     "localises": "Circuit downtime (filter changes, transport, line issues) reduces delivered dose even when nothing is technically wrong.",
     "differential": [
       "Three 40-minute circuit changes in a day ≈ 120 minutes ≈ 8.3% of the day",
-      "A 25 mL/kg/hr prescription at 91.7% uptime delivers roughly 23 mL/kg/hr — before any other loss"
+      "A 25 mL/kg/hr prescription at 91.7% uptime delivers roughly 23 mL/kg/hr, before any other loss"
     ],
     "firstActions": [
       "Prescribe above target (25–30 mL/kg/hr) to absorb expected downtime and still land at 20–25 delivered",
