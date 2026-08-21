@@ -22,8 +22,8 @@ window.CRRTUICalculator = (function () {
     modality: 'CVVHDF',
     bloodFlow_mL_min: 150,
     dialysateFlow_mL_hr: 1500,
-    replacementPre_mL_hr: 100,
-    replacementPost_mL_hr: 400,
+    replacementPre_mL_hr: 0,
+    replacementPost_mL_hr: 500,
     netUltrafiltration_mL_hr: 0,
     nonCRRTIntake_mL_hr: 0,
     uptimeFraction: 0.90,
@@ -31,14 +31,14 @@ window.CRRTUICalculator = (function () {
     setupGenerated: false,
     machineEdited: false,
 
-    anticoag: 'citrate', // 'citrate' | 'heparin' | 'heparinized'
+    anticoag: 'citrate', // 'citrate' | 'heparin' | 'none'
 
     // platform and commercially supplied fluids
     marketRegion: 'CA',
     solutionBrand: 'vantive',
     dialysateProductId: 'prismasate-bgk-2-0',
     replacementProductId: 'prismasol-bgk-2-0',
-    citrateProductId: 'prismocitrate-18-0',
+    citrateProductId: 'regiocit',
 
     // citrate
     citratePreset: 'acda',
@@ -157,7 +157,7 @@ window.CRRTUICalculator = (function () {
           ${renderCircuitCard(dose)}
           ${state.anticoag === 'citrate' ? renderCitratePanel(dose) : ''}
           ${state.anticoag === 'heparin' ? renderHeparinPanel() : ''}
-          ${state.anticoag === 'heparinized' ? renderNoAnticoagPanel() : ''}
+          ${state.anticoag === 'none' ? renderNoAnticoagPanel() : ''}
           ${renderSolutionsPanel(dose)}
         </div>
         <div>
@@ -214,6 +214,7 @@ window.CRRTUICalculator = (function () {
 
   function renderPlatformCard() {
     const brand = selectedBrand();
+    const citrate = state.anticoag === 'citrate' ? productById(state.citrateProductId) : null;
     return `
       <div class="card">
         <div class="card-title-row">
@@ -226,6 +227,7 @@ window.CRRTUICalculator = (function () {
             <select id="marketRegion">
               ${[['CA','Canada'],['US','United States'],['EU','Europe'],['ALL','Show all markets']].map(([id,label]) => `<option value="${id}" ${state.marketRegion === id ? 'selected' : ''}>${label}</option>`).join('')}
             </select>
+            <div class="field-help">This filters the catalogue, not live availability. Pharmacy must confirm what is stocked and approved locally.</div>
           </div>
           <div class="field">
             <label for="solutionBrand">Manufacturer / brand</label>
@@ -235,6 +237,16 @@ window.CRRTUICalculator = (function () {
             <div class="field-help">Platform: ${brand.platform || 'site-specific'}. Product connectors and integrated pumps may restrict compatible fluids.</div>
           </div>
         </div>
+
+        ${state.anticoag === 'citrate' ? `
+        <div class="field mt-4">
+          <label for="citrateProduct">Citrate product</label>
+          <select id="citrateProduct">${renderProductOptions('citrate', state.citrateProductId)}</select>
+          <div class="field-help">The selected concentration drives citrate-flow calculation. Confirm the local product, pump channel and RCA nomogram.</div>
+        </div>
+        ${renderComposition(citrate, 'Citrate')}
+        ${!citrate ? '<div class="warning-inline hard">No verified citrate product is listed for this brand and market. Citrate-flow calculation is disabled. Choose the actual citrate supplier or add the locally approved product to the catalogue.</div>' : ''}
+        ` : ''}
       </div>`;
   }
 
@@ -244,7 +256,7 @@ window.CRRTUICalculator = (function () {
       ? num(state.targetDeliveredDose_mL_kg_hr) / num(state.uptimeFraction)
       : null;
     const weightHelp = bmi.bmi === null
-      ? 'Use the unit-approved dosing weight. Add height and an IBW formula if ideal or adjusted weight is being considered. Please refer to <a href="https://kdigo.org/wp-content/uploads/2026/03/KDIGO-2026-AKI-AKD-Guideline-Public-Review-Draft-March-2026.pdf" target="_blank" rel="noopener">KDIGO 2026 Clinical Practice Guideline for AKI and AKD</a> for further info.'
+      ? 'Use the unit-approved dosing weight. Add height and an IBW formula if ideal or adjusted weight is being considered.'
       : bmi.bmi >= 30
         ? `BMI ${fmt(bmi.bmi)}. In high BMI, ideal or adjusted weight may avoid excessive initial CRRT dose. ${bmi.ibwKg ? `IBW ${fmt(bmi.ibwKg)} kg; adjusted weight ${fmt(bmi.adjustedBodyWeightKg)} kg.` : 'Select an IBW formula to calculate alternatives.'}`
         : `BMI ${fmt(bmi.bmi)}. Actual or pre-illness weight is generally used unless the local protocol specifies another basis.`;
@@ -252,13 +264,13 @@ window.CRRTUICalculator = (function () {
     return `
       <div class="card guidance-card setup-card">
         <span class="eyebrow">Step 1</span>
-        <h2>Establish treatment target</h2>
+        <h2>Define the treatment target</h2>
 
         <label>Anticoagulation strategy</label>
         <div class="btn-group" id="anticoagGroup">
           <button type="button" class="btn-toggle mod-citrate ${state.anticoag === 'citrate' ? 'selected' : ''}" data-anticoag="citrate">Regional citrate</button>
           <button type="button" class="btn-toggle mod-heparin ${state.anticoag === 'heparin' ? 'selected' : ''}" data-anticoag="heparin">Systemic heparin</button>
-          <button type="button" class="btn-toggle mod-none ${state.anticoag === 'heparinized' ? 'selected' : ''}" data-anticoag="heparinized">Heparinized circuit only</button>
+          <button type="button" class="btn-toggle mod-none ${state.anticoag === 'none' ? 'selected' : ''}" data-anticoag="none">No anticoagulation</button>
         </div>
 
         <div class="input-row mt-4">
@@ -349,7 +361,7 @@ window.CRRTUICalculator = (function () {
         <div class="guidance-grid">
           <div class="guidance-item"><strong>Generated for ${fmt(state.weightKg)} kg</strong><span>${state.modality}, ${state.anticoag === 'citrate' ? 'regional citrate' : state.anticoag === 'heparin' ? 'systemic heparin' : 'no anticoagulation'}.</span></div>
           <div class="guidance-item"><strong>${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr current</strong><span>Includes ${fmt((1 - state.uptimeFraction) * 100, 0)}% downtime and pre-filter dilution.${state.machineEdited ? ' Machine settings have been edited.' : ''}</span></div>
-        </div>` : '<div class="warning-inline">Use Generate starting prescription above to calculate recommended values. Calculations will automatically update with changes to these fields.</div>'}
+        </div>` : '<div class="warning-inline">The fields below remain editable. Use Generate starting prescription above to replace them with calculated starting values.</div>'}
 
       <div class="input-row mt-4">
         <div class="field">
@@ -393,13 +405,13 @@ window.CRRTUICalculator = (function () {
       </div>
 
       <div class="output-block">
-        <div class="output-row"><span class="label">Effluent rate</span><span class="value" id="out-effluent">${fmt(dose.effluentRate_mL_hr, 0)} mL/hr</span></div>
-        <div class="output-row"><span class="label">Prescribed dose</span><span class="value" id="out-prescribed">${fmt(dose.prescribedDose_mL_kg_hr)} mL/kg/hr</span></div>
-        <div class="output-row"><span class="label">Pre-dilution corrected dose</span><span class="value" id="out-corrected">${fmt(dose.correctedDose_mL_kg_hr)} mL/kg/hr</span></div>
-        <div class="output-row"><span class="label">Delivered dose (corrected × uptime)</span><span class="value big" id="out-delivered">${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr</span></div>
-        <div class="output-row"><span class="label">Filtration fraction</span><span class="value"><span id="out-ff">${fmt(dose.filtrationFraction * 100)}% </span><span id="out-ff-badge" class="flag ${dose.ffFlag}">${dose.ffFlag}</span></span></div>
-        <div class="output-row"><span class="label">Total UF (crosses membrane)</span><span class="value" id="out-totaluf">${fmt(dose.totalUltrafiltration_mL_hr, 0)} mL/hr</span></div>
-        <div class="output-row"><span class="label">Estimated balance from entered intake and net UF</span><span class="value" id="out-balance">${fmt(dose.estimatedPatientBalance_mL_hr, 0)} mL/hr</span></div>
+        <div class="output-row"><span class="label">Effluent rate</span><span class="value">${fmt(dose.effluentRate_mL_hr, 0)} mL/hr</span></div>
+        <div class="output-row"><span class="label">Prescribed dose</span><span class="value">${fmt(dose.prescribedDose_mL_kg_hr)} mL/kg/hr</span></div>
+        <div class="output-row"><span class="label">Pre-dilution–corrected dose</span><span class="value">${fmt(dose.correctedDose_mL_kg_hr)} mL/kg/hr</span></div>
+        <div class="output-row"><span class="label">Delivered dose (corrected × uptime)</span><span class="value big">${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr</span></div>
+        <div class="output-row"><span class="label">Filtration fraction</span><span class="value">${fmt(dose.filtrationFraction * 100)}% <span class="flag ${dose.ffFlag}">${dose.ffFlag}</span></span></div>
+        <div class="output-row"><span class="label">Total UF (crosses membrane)</span><span class="value">${fmt(dose.totalUltrafiltration_mL_hr, 0)} mL/hr</span></div>
+        <div class="output-row"><span class="label">Estimated balance from entered intake and net UF</span><span class="value">${fmt(dose.estimatedPatientBalance_mL_hr, 0)} mL/hr</span></div>
       </div>
       ${dose.prescribedDose_mL_kg_hr > 40 ? `<div class="warning-inline hard">Prescribed dose above trial-tested range. RENAL and ATN showed no benefit over 20–25 mL/kg/hr delivered.</div>` : ''}
       ${dose.ffFlag === 'amber' ? `<div class="warning-inline">FF 20–25%: increasing haemoconcentration risk. Consider increasing Qb, shifting replacement pre-filter, or reducing convective flow.</div>` : ''}
@@ -433,7 +445,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       <div class="btn-group" id="anticoagGroup">
         <button type="button" class="btn-toggle mod-citrate ${state.anticoag === 'citrate' ? 'selected' : ''}" data-anticoag="citrate">Regional citrate</button>
         <button type="button" class="btn-toggle mod-heparin ${state.anticoag === 'heparin' ? 'selected' : ''}" data-anticoag="heparin">Systemic heparin</button>
-        <button type="button" class="btn-toggle mod-none ${state.anticoag === 'heparinized' ? 'selected' : ''}" data-anticoag="heparinized">None</button>
+        <button type="button" class="btn-toggle mod-none ${state.anticoag === 'none' ? 'selected' : ''}" data-anticoag="none">None</button>
       </div>
     </div>`;
   }
@@ -580,10 +592,33 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
 
   // -----------------------------------------------------------------------
   function renderHeparinPanel() {
+    const h = C.computeHeparinDosing({
+      weightKg: state.actualWeightKg,
+      bolusUnits: state.bolusUnits,
+      infusionUnitsPerKgHr: state.infusionUnitsPerKgHr,
+      heparinConcentration_units_mL: state.heparinConcentration_units_mL,
+    });
+    const targets = CONFIG.heparin?.targets || {};
+
     return `
     <div class="card accent-card mod-heparin">
       <h2><span class="tag">Heparin</span> Systemic heparin</h2>
-      <p class="small muted">Please defer to your local heparin anticoagulation protocol and nomogram for bolus dosing, infusion rates, monitoring targets, and titration.</p>
+      <div class="warning-inline">Omit the bolus in active bleeding, recent surgery, post-cardiotomy, or thrombocytopenia.</div>
+
+      <div class="input-row">
+        <div class="field"><label for="bolusUnits">Bolus <span class="unit">units</span></label><input type="number" id="bolusUnits" value="${state.bolusUnits}" min="0" max="1000" step="50"><div class="field-help">Generic starting range 500–1000 units. Use 0 when the bolus is unsafe and follow the local protocol.</div></div>
+        <div class="field"><label for="infusionUnitsPerKgHr">Infusion <span class="unit">U/kg/hr actual weight</span></label><input type="number" id="infusionUnitsPerKgHr" value="${state.infusionUnitsPerKgHr}" min="0" max="15" step="0.5"></div>
+        <div class="field"><label for="heparinConc">Solution concentration <span class="unit">U/mL</span></label><input type="number" id="heparinConc" value="${state.heparinConcentration_units_mL}" min="1" step="1"></div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-row"><span class="label">Bolus dose</span><span class="value">${fmt(h.bolusUnits, 0)} units</span></div>
+        <div class="output-row"><span class="label">Infusion rate</span><span class="value big">${fmt(h.infusionRate_mL_hr, 2)} mL/hr</span></div>
+        <div class="output-row"><span class="label">Infusion dose</span><span class="value">${fmt(h.infusionUnits_hr, 0)} units/hr</span></div>
+      </div>
+
+      <p class="small muted">Generic infusion starting range: 5–10 U/kg/hr. Targets shown in config are placeholders until locally reviewed. Use the unit-approved aPTT or anti-Xa nomogram.</p>
+
       <div class="warning-inline hard">
         <strong>HIT:</strong> if platelets fall &gt; 50% from baseline or thrombosis develops, stop ALL heparin including flushes. Alternatives: argatroban or bivalirudin. Consider a 4Ts assessment (not scored in this app).
       </div>
@@ -593,8 +628,8 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
   function renderNoAnticoagPanel() {
     return `
     <div class="card accent-card mod-none">
-      <h2><span class="tag">Heparinized</span> Heparinized circuit only</h2>
-      <p>The circuit priming solution contains heparin, but no systemic or regional anticoagulation is added during the run. Higher blood flow and pre-dilution replacement help extend filter life. Please defer to your local protocol for circuit priming and management.</p>
+      <h2><span class="tag">None</span> No anticoagulation strategy</h2>
+      <p>Higher blood flow, pre-dilution replacement, and minimising circuit interruptions extend filter life without anticoagulation. Accept shorter filter life as the trade-off — this is the expected and correct cost of this strategy in active bleeding or high bleeding risk, not evidence the approach is wrong.</p>
     </div>`;
   }
 
@@ -648,7 +683,6 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
   function renderSolutionsPanel(dose) {
     const dialysate = productById(state.dialysateProductId);
     const replacement = productById(state.replacementProductId);
-    const citrate = productById(state.citrateProductId);
     let po4 = null;
     if (state.serumPO4_mmol_L !== '') {
       po4 = C.estimatePhosphateRemoval({ effluentRate_mL_hr: dose.effluentRate_mL_hr, serumPO4_mmol_L: num(state.serumPO4_mmol_L) });
@@ -681,14 +715,6 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       </div>
       ${renderComposition(replacement, 'Replacement')}${renderSolutionGuidance(replacement, 'The selected replacement fluid')}` : ''}
 
-      ${state.anticoag === 'citrate' ? `
-      <div class="field mt-4">
-        <label for="citrateProduct">Citrate product</label>
-        <select id="citrateProduct">${renderProductOptions('citrate', state.citrateProductId)}</select>
-        <div class="field-help">The selected concentration drives citrate-flow calculation. Confirm the local product, pump channel and RCA nomogram.</div>
-      </div>
-      ${renderComposition(citrate, 'Citrate')}
-      ${!citrate ? '<div class="warning-inline hard">No verified citrate product is listed for this brand and market. Citrate-flow calculation is disabled. Choose the actual citrate supplier or add the locally approved product to the catalogue.</div>' : ''}` : ''}
 
       <h3 class="mt-4">Patient electrolytes</h3>
       <div class="input-row">
@@ -699,7 +725,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       <p class="small muted">Hypophosphataemia is common during CRRT, particularly with phosphate-free solutions and longer treatment. Use a phosphate-containing solution or replace separately when indicated; follow the local monitoring schedule.</p>
 
       <h3 class="mt-4">Sodium safety</h3>
-      <div class="input-row sodium-row">
+      <div class="input-row">
         <div class="field"><label for="serumNa">Serum Na⁺ <span class="unit">mmol/L</span></label><input type="number" id="serumNa" value="${state.serumNa_mmol_L}" step="1"></div>
         <div class="field"><label>Selected-fluid Na⁺ <span class="unit">mmol/L</span></label><input type="number" value="${selectedNa === null ? '' : fmt(selectedNa, 1)}" disabled><div class="field-help">Flow-weighted dialysate/replacement sodium. Citrate sodium and other infusions are not included.</div></div>
       </div>
@@ -709,59 +735,6 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
 
       <p class="small muted mt-4">Catalogue values support education and consistency checks, not product substitution. Verify the bag label, current monograph, connector compatibility and institution-approved protocol before use. Also expect magnesium losses with RCA, and re-check drug dosing against a CRRT-specific reference.</p>
     </div>`;
-  }
-
-  // Lightweight output-only refresh: updates the dose table and schematic
-  // on every input keystroke without destroying focus with a full re-render.
-  function updateOutputOnly(root) {
-    const dose = C.computeDoseAndFF({
-      weightKg: state.weightKg,
-      hematocrit: state.hematocrit,
-      bloodFlow_mL_min: state.bloodFlow_mL_min,
-      dialysateFlow_mL_hr: state.modality === 'CVVH' || state.modality === 'SCUF' ? 0 : state.dialysateFlow_mL_hr,
-      replacementPre_mL_hr: state.replacementPre_mL_hr,
-      replacementPost_mL_hr: state.replacementPost_mL_hr,
-      netUltrafiltration_mL_hr: state.netUltrafiltration_mL_hr,
-      citrateFlow_mL_hr: state.anticoag === 'citrate' ? getCitrateFlow() : 0,
-      citratePreFilter: state.citratePreFilter,
-      uptimeFraction: state.uptimeFraction,
-      nonCRRTIntake_mL_hr: state.nonCRRTIntake_mL_hr,
-    });
-    const rows = {
-      'out-effluent':  fmt(dose.effluentRate_mL_hr, 0) + ' mL/hr',
-      'out-prescribed': fmt(dose.prescribedDose_mL_kg_hr) + ' mL/kg/hr',
-      'out-corrected':  fmt(dose.correctedDose_mL_kg_hr) + ' mL/kg/hr',
-      'out-delivered':  fmt(dose.correctedDeliveredDose_mL_kg_hr) + ' mL/kg/hr',
-      'out-ff':         fmt(dose.filtrationFraction * 100) + '% ',
-      'out-totaluf':    fmt(dose.totalUltrafiltration_mL_hr, 0) + ' mL/hr',
-      'out-balance':    fmt(dose.estimatedPatientBalance_mL_hr, 0) + ' mL/hr',
-    };
-    Object.entries(rows).forEach(([id, text]) => {
-      const node = document.getElementById(id);
-      if (node) node.textContent = text;
-    });
-    const ffBadge = document.getElementById('out-ff-badge');
-    if (ffBadge) { ffBadge.textContent = dose.ffFlag; ffBadge.className = 'flag ' + dose.ffFlag; }
-    // Refresh schematic.
-    const accentVar = state.anticoag === 'citrate' ? '--citrate' : state.anticoag === 'heparin' ? '--heparin' : '--muted';
-    const schWrap = root ? root.querySelector('.schematic-wrap') : null;
-    if (schWrap) {
-      const existingSvg = schWrap.querySelector('svg');
-      if (existingSvg) existingSvg.remove();
-      const tmp = document.createElement('div');
-      tmp.innerHTML = window.CRRTSchematic.render({
-        qb_mL_min: state.bloodFlow_mL_min,
-        prefilterActive: state.replacementPre_mL_hr > 0 || (state.anticoag === 'citrate' && state.citratePreFilter),
-        postfilterActive: state.replacementPost_mL_hr > 0,
-        ff: dose.filtrationFraction,
-        accentVar,
-      });
-      const newSvg = tmp.querySelector('svg');
-      const h3 = schWrap.querySelector('h3');
-      if (h3 && newSvg) h3.after(newSvg);
-      const pr = schWrap.querySelector('.pressure-readout');
-      if (pr) pr.innerHTML = '<span>FF <span class="val">' + fmt(dose.filtrationFraction * 100) + '%</span></span><span>Effluent <span class="val">' + fmt(dose.effluentRate_mL_hr, 0) + ' mL/hr</span></span>';
-    }
   }
 
   // -----------------------------------------------------------------------
@@ -776,9 +749,10 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
         return v;
       };
       node.addEventListener('input', () => {
+        // Preserve focus while typing. The previous full re-render on every
+        // keystroke made multi-digit entry effectively impossible.
         state[key] = readValue();
         if (onUpdate) onUpdate();
-        updateOutputOnly(root);
       });
       node.addEventListener('change', () => {
         state[key] = readValue();
@@ -834,15 +808,8 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       });
       state.bloodFlow_mL_min = suggestion.bloodFlow_mL_min;
       state.dialysateFlow_mL_hr = suggestion.dialysateFlow_mL_hr;
-      // Apply protocol pre/post split: citrate 20/80, heparin/heparinized 50/50.
-      const totalReplacement = suggestion.replacementPre_mL_hr + suggestion.replacementPost_mL_hr;
-      if (state.anticoag === 'citrate') {
-        state.replacementPre_mL_hr  = Math.round(totalReplacement * 0.20 / 50) * 50;
-        state.replacementPost_mL_hr = Math.round(totalReplacement * 0.80 / 50) * 50;
-      } else {
-        state.replacementPre_mL_hr  = Math.round(totalReplacement * 0.50 / 50) * 50;
-        state.replacementPost_mL_hr = totalReplacement - state.replacementPre_mL_hr;
-      }
+      state.replacementPre_mL_hr = suggestion.replacementPre_mL_hr;
+      state.replacementPost_mL_hr = suggestion.replacementPost_mL_hr;
       state.setupGenerated = true;
       state.machineEdited = false;
       render(root);
