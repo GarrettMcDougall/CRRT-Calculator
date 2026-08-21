@@ -38,7 +38,7 @@ window.CRRTUICalculator = (function () {
     solutionBrand: 'vantive',
     dialysateProductId: 'prismasate-bgk-2-0',
     replacementProductId: 'prismasol-bgk-2-0',
-    citrateProductId: 'regiocit',
+    citrateProductId: 'prismocitrate-18-0',
 
     // citrate
     citratePreset: 'acda',
@@ -214,7 +214,6 @@ window.CRRTUICalculator = (function () {
 
   function renderPlatformCard() {
     const brand = selectedBrand();
-    const citrate = state.anticoag === 'citrate' ? productById(state.citrateProductId) : null;
     return `
       <div class="card">
         <div class="card-title-row">
@@ -237,16 +236,6 @@ window.CRRTUICalculator = (function () {
             <div class="field-help">Platform: ${brand.platform || 'site-specific'}. Product connectors and integrated pumps may restrict compatible fluids.</div>
           </div>
         </div>
-
-        ${state.anticoag === 'citrate' ? `
-        <div class="field mt-4">
-          <label for="citrateProduct">Citrate product</label>
-          <select id="citrateProduct">${renderProductOptions('citrate', state.citrateProductId)}</select>
-          <div class="field-help">The selected concentration drives citrate-flow calculation. Confirm the local product, pump channel and RCA nomogram.</div>
-        </div>
-        ${renderComposition(citrate, 'Citrate')}
-        ${!citrate ? '<div class="warning-inline hard">No verified citrate product is listed for this brand and market. Citrate-flow calculation is disabled. Choose the actual citrate supplier or add the locally approved product to the catalogue.</div>' : ''}
-        ` : ''}
       </div>`;
   }
 
@@ -683,6 +672,7 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
   function renderSolutionsPanel(dose) {
     const dialysate = productById(state.dialysateProductId);
     const replacement = productById(state.replacementProductId);
+    const citrate = productById(state.citrateProductId);
     let po4 = null;
     if (state.serumPO4_mmol_L !== '') {
       po4 = C.estimatePhosphateRemoval({ effluentRate_mL_hr: dose.effluentRate_mL_hr, serumPO4_mmol_L: num(state.serumPO4_mmol_L) });
@@ -715,6 +705,14 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       </div>
       ${renderComposition(replacement, 'Replacement')}${renderSolutionGuidance(replacement, 'The selected replacement fluid')}` : ''}
 
+      ${state.anticoag === 'citrate' ? `
+      <div class="field mt-4">
+        <label for="citrateProduct">Citrate product</label>
+        <select id="citrateProduct">${renderProductOptions('citrate', state.citrateProductId)}</select>
+        <div class="field-help">The selected concentration drives citrate-flow calculation. Confirm the local product, pump channel and RCA nomogram.</div>
+      </div>
+      ${renderComposition(citrate, 'Citrate')}
+      ${!citrate ? '<div class="warning-inline hard">No verified citrate product is listed for this brand and market. Citrate-flow calculation is disabled. Choose the actual citrate supplier or add the locally approved product to the catalogue.</div>' : ''}` : ''}
 
       <h3 class="mt-4">Patient electrolytes</h3>
       <div class="input-row">
@@ -808,8 +806,46 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       });
       state.bloodFlow_mL_min = suggestion.bloodFlow_mL_min;
       state.dialysateFlow_mL_hr = suggestion.dialysateFlow_mL_hr;
-      state.replacementPre_mL_hr = suggestion.replacementPre_mL_hr;
-      state.replacementPost_mL_hr = suggestion.replacementPost_mL_hr;
+
+      // Apply protocol pre/post split to the replacement volume.
+      // Citrate: check FF headroom — if citrate already fills most of the
+      // 20% FF budget, all replacement goes post-filter (adding pre-filter
+      // replacement on top of a large pre-filter citrate volume would breach
+      // the FF ceiling). When there is room, use 20% pre / 80% post.
+      // Heparin / heparinized circuit: 50% pre / 50% post.
+      const totalReplacement = suggestion.replacementPre_mL_hr + suggestion.replacementPost_mL_hr;
+      if (state.anticoag === 'citrate') {
+        const citrateQ = getCitrateFlow();
+        const plasmaQ = num(state.bloodFlow_mL_min) * 60 * (1 - num(state.hematocrit));
+        const ffFromCitrate = citrateQ / Math.max(plasmaQ + citrateQ, 1);
+        if (ffFromCitrate < 0.16) {
+          // Enough headroom: 20% pre, 80% post.
+          state.replacementPre_mL_hr  = Math.round(totalReplacement * 0.20 / 50) * 50;
+          state.replacementPost_mL_hr = Math.max(0, totalReplacement - state.replacementPre_mL_hr);
+        } else {
+          // Citrate fills most of the FF budget: all replacement post-filter.
+          state.replacementPre_mL_hr  = 0;
+          state.replacementPost_mL_hr = totalReplacement;
+        }
+      } else {
+        // Heparin or heparinized circuit: 50% pre, 50% post.
+        state.replacementPre_mL_hr  = Math.round(totalReplacement * 0.50 / 50) * 50;
+        state.replacementPost_mL_hr = Math.max(0, totalReplacement - state.replacementPre_mL_hr);
+      }
+
+      // After shifting replacement pre-filter, the pre-dilution correction
+      // reduces effective clearance below target. Compensate by increasing
+      // dialysate flow so the delivered dose still lands at the original target.
+      if (state.replacementPre_mL_hr > 0 && state.modality !== 'CVVH' && state.dialysateFlow_mL_hr > 0) {
+        const plasmaWater = num(state.bloodFlow_mL_min) * 60 * (1 - num(state.hematocrit)) * 0.93;
+        const citrateQ = state.anticoag === 'citrate' ? getCitrateFlow() : 0;
+        const dilution = plasmaWater / Math.max(plasmaWater + state.replacementPre_mL_hr + citrateQ, 1);
+        const qdNeeded = (num(state.targetDeliveredDose_mL_kg_hr) * num(state.weightKg) / Math.max(dilution * num(state.uptimeFraction), 1e-6))
+          - state.replacementPre_mL_hr - state.replacementPost_mL_hr
+          - num(state.netUltrafiltration_mL_hr) - citrateQ;
+        if (qdNeeded > 0) state.dialysateFlow_mL_hr = Math.round(qdNeeded / 50) * 50;
+      }
+
       state.setupGenerated = true;
       state.machineEdited = false;
       render(root);

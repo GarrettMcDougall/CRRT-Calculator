@@ -1,7 +1,7 @@
 /**
- * calc.js: CRRT calculation engine
+ * calc.js — CRRT calculation engine
  *
- * PURE FUNCTIONS ONLY. No DOM access. No rounding inside math. Rounding
+ * PURE FUNCTIONS ONLY. No DOM access. No rounding inside math — rounding
  * happens at render time in the UI layer. Every function takes a single
  * object argument and returns a single object. Units are explicit in every
  * key name (e.g. _mL_hr, _mmol_L).
@@ -118,10 +118,13 @@
 
   /**
    * Build a coherent generic starting prescription around a target delivered
-   * small-solute dose. FF ceiling is a hard constraint: flows are never
-   * generated that would require a filtration fraction above ffCeiling.
+   * small-solute dose. The filtration-fraction ceiling is a hard constraint:
+   * flows are never generated that would require an FF above ffCeiling.
    * When the target is unreachable at the given Qb, the function sets
    * targetAchieved:false and populates warnings explaining what to change.
+   *
+   * CVVHDF splits the effluent budget 50% dialysate / 50% convective so the
+   * caller's pre/post split of the replacement portion is meaningful.
    */
   function suggestPrescription({
     weightKg,
@@ -142,8 +145,7 @@
     const plasmaFlow = bloodFlow_mL_min * 60 * (1 - hematocrit);
     const warnings = [];
 
-    // Assemble the final result object, running computeDoseAndFF to get
-    // accurate predicted values from whatever flows were chosen.
+    // Assemble result, running computeDoseAndFF for accurate predictions.
     const finalise = (flows, extra) => {
       const check = computeDoseAndFF({
         weightKg, hematocrit, bloodFlow_mL_min,
@@ -164,25 +166,23 @@
       };
     };
 
-    // Guard: without a valid plasma flow there is no circuit to prescribe.
+    // Guard: without valid inputs there is no circuit to prescribe.
     if (!Number.isFinite(plasmaFlow) || plasmaFlow <= 0 ||
         !Number.isFinite(weightKg) || weightKg <= 0) {
       warnings.push('Enter a blood flow, haematocrit, and weight above zero before generating a starting prescription.');
       return finalise(
         { dialysateFlow_mL_hr: 0, replacementPre_mL_hr: 0, replacementPost_mL_hr: 0 },
-        { targetAchieved: false, rationale: 'Insufficient inputs to generate a prescription.' }
+        { targetAchieved: false, rationale: 'Insufficient inputs.' }
       );
     }
 
-    // Baseline check: net UF plus pre-filter citrate may already exceed the
-    // ceiling before any replacement is added; no choice of flows can fix that.
-    // This runs before the SCUF early-return so SCUF with a dangerously high
-    // fluid-removal rate still receives a warning.
-    const baselineFF = (netUltrafiltration_mL_hr + citratePre) / (plasmaFlow + citratePre);
+    // Baseline check: net UF plus pre-filter citrate may already fill the
+    // FF budget before any replacement is added. Runs before SCUF so SCUF
+    // with a dangerously high UF rate still receives a warning.
     const asQb = (v) => (Number.isFinite(v) && v > 0 ? `${Math.ceil(v / 10) * 10} mL/min` : 'a higher rate');
+    const baselineFF = (netUltrafiltration_mL_hr + citratePre) / (plasmaFlow + citratePre);
     if (!Number.isFinite(baselineFF) || baselineFF > ffCeiling) {
-      const qbForNetUF = ((netUltrafiltration_mL_hr + citratePre) / ffCeiling - citratePre)
-        / (60 * (1 - hematocrit));
+      const qbForNetUF = ((netUltrafiltration_mL_hr + citratePre) / ffCeiling - citratePre) / (60 * (1 - hematocrit));
       warnings.push(
         (Number.isFinite(baselineFF)
           ? `Net ultrafiltration${citratePre > 0 ? ' plus pre-filter citrate' : ''} alone gives a filtration fraction of ${Math.round(baselineFF * 100)}%, above the ${Math.round(ffCeiling * 100)}% ceiling, before any replacement fluid is added. `
@@ -194,15 +194,12 @@
     if (modality === 'SCUF') {
       return finalise(
         { dialysateFlow_mL_hr: 0, replacementPre_mL_hr: 0, replacementPost_mL_hr: 0 },
-        {
-          targetAchieved: warnings.length === 0,
-          rationale: 'SCUF targets fluid removal only. No small-solute dose is prescribed.',
-        }
+        { targetAchieved: warnings.length === 0, rationale: 'SCUF targets fluid removal only. No small-solute dose is prescribed.' }
       );
     }
 
-    // Maximum total convective volume (replacement) that keeps FF at or below
-    // the ceiling, given a pre-dilution fraction p:
+    // Maximum convective volume that keeps FF at or below the ceiling
+    // given a pre-dilution fraction p:
     //   (qr + netUF + citratePre) <= FF * (plasmaFlow + qr*p + citratePre)
     const convectionCapAt = (p) => {
       const denom = 1 - ffCeiling * p;
@@ -222,14 +219,11 @@
     const wantsConvection = modality === 'CVVH' || modality === 'CVVHDF';
     let qrTotal = 0, qd = 0, preFraction = 0;
 
-    // Iterative solver: alternately update flows and pre-dilution fraction
-    // until the delivered dose converges on the target.
     for (let i = 0; i < 40; i++) {
       preFraction = preFractionFor(qrTotal);
       const pre = qrTotal * preFraction;
       const dilutionFactor = plasmaFlow / Math.max(plasmaFlow + pre + citratePre, 1e-6);
-      const requiredEffluent =
-        (targetDeliveredDose_mL_kg_hr * weightKg) / Math.max(dilutionFactor * uptimeFraction, 1e-6);
+      const requiredEffluent = (targetDeliveredDose_mL_kg_hr * weightKg) / Math.max(dilutionFactor * uptimeFraction, 1e-6);
 
       if (modality === 'CVVHD') {
         qrTotal = 0;
@@ -238,23 +232,23 @@
         qrTotal = Math.min(convectionCap, Math.max(0, requiredEffluent - netUltrafiltration_mL_hr - citratePre));
         qd = 0;
       } else {
-        // CVVHDF: roughly one-third convective (bounded by FF cap), rest diffusive.
-        const convectiveTarget = Math.max(0, requiredEffluent - netUltrafiltration_mL_hr - citratePre) / 3;
-        qrTotal = Math.min(convectionCap, convectiveTarget);
+        // CVVHDF: 50% dialysate, 50% convective — gives a balanced starting
+        // point that the caller's pre/post split can then act on meaningfully.
+        const available = Math.max(0, requiredEffluent - netUltrafiltration_mL_hr - citratePre);
+        qrTotal = Math.min(convectionCap, available * 0.50);
         qd = Math.max(0, requiredEffluent - qrTotal - netUltrafiltration_mL_hr - citratePre);
       }
     }
 
     // Convective volumes round DOWN so rounding never pushes FF over the ceiling.
-    // Dialysate rounds to nearest 50 (no FF impact).
     const flows = {
       dialysateFlow_mL_hr: round50(qd),
       replacementPre_mL_hr: floor50(qrTotal * preFraction),
       replacementPost_mL_hr: floor50(qrTotal * (1 - preFraction)),
     };
 
-    // Belt-and-braces: trim post-filter replacement in 50 mL steps if rounding
-    // still leaves FF above the ceiling.
+    // Belt-and-braces: trim post-filter in 50 mL steps if rounding still
+    // leaves FF above the ceiling.
     for (let guard = 0; guard < 200; guard++) {
       const trial = computeDoseAndFF({
         weightKg, hematocrit, bloodFlow_mL_min, ...flows,
@@ -264,44 +258,30 @@
       flows.replacementPost_mL_hr -= 50;
     }
 
-    // Did the FF ceiling prevent us from reaching the target?
-    const achievableEffluent =
-      flows.dialysateFlow_mL_hr + flows.replacementPre_mL_hr +
-      flows.replacementPost_mL_hr + netUltrafiltration_mL_hr + citratePre;
+    if (wantsConvection && convectionCap <= 0) {
+      warnings.push('At this blood flow, haematocrit, and fluid-removal rate, no convective volume can be added without exceeding the filtration-fraction ceiling. Increase blood flow, or switch to a diffusive modality (CVVHD).');
+    }
 
-    // Recalculate required effluent at the final pre-dilution fraction for comparison.
+    // Check whether the FF ceiling prevented reaching the target.
+    const achievableEffluent = flows.dialysateFlow_mL_hr + flows.replacementPre_mL_hr + flows.replacementPost_mL_hr + netUltrafiltration_mL_hr + citratePre;
     const finalPre = flows.replacementPre_mL_hr;
     const finalDilution = plasmaFlow / Math.max(plasmaFlow + finalPre + citratePre, 1e-6);
-    const targetEffluent =
-      (targetDeliveredDose_mL_kg_hr * weightKg) / Math.max(finalDilution * uptimeFraction, 1e-6);
-
-    const shortfall = targetEffluent - achievableEffluent;
-    const targetAchieved = shortfall <= Math.max(25, targetEffluent * 0.02);
-
-    if (wantsConvection && convectionCap <= 0) {
-      warnings.push(
-        'At this blood flow, haematocrit, and fluid-removal rate, no convective volume can be added without exceeding the filtration-fraction ceiling. Increase blood flow, or switch to a diffusive modality (CVVHD).'
-      );
-    }
+    const targetEffluent = (targetDeliveredDose_mL_kg_hr * weightKg) / Math.max(finalDilution * uptimeFraction, 1e-6);
+    const targetAchieved = (targetEffluent - achievableEffluent) <= Math.max(25, targetEffluent * 0.02);
 
     if (!targetAchieved) {
       const qrNeeded = Math.max(0, targetEffluent - netUltrafiltration_mL_hr - citratePre);
-      const plasmaFlowNeeded =
-        (qrNeeded * (1 - ffCeiling * maxPreFraction) + netUltrafiltration_mL_hr + citratePre)
-        / ffCeiling - citratePre;
+      const plasmaFlowNeeded = (qrNeeded * (1 - ffCeiling * maxPreFraction) + netUltrafiltration_mL_hr + citratePre) / ffCeiling - citratePre;
       const qbNeeded = plasmaFlowNeeded / (60 * (1 - hematocrit));
-
       warnings.push(
         `Target dose is not achievable in ${modality} at Qb ${Math.round(bloodFlow_mL_min)} mL/min without exceeding a filtration fraction of ${Math.round(ffCeiling * 100)}%. `
         + (modality === 'CVVH'
           ? `Add dialysate (switch to CVVHDF): diffusive clearance does not consume filtration fraction, or increase blood flow to roughly ${asQb(qbNeeded)}.`
           : `Increase blood flow to roughly ${asQb(qbNeeded)}, or accept the lower delivered dose.`)
       );
-
       return finalise(flows, {
         targetAchieved: false,
-        minBloodFlowForTarget_mL_min: Number.isFinite(qbNeeded) && qbNeeded > 0
-          ? Math.ceil(qbNeeded / 10) * 10 : null,
+        minBloodFlowForTarget_mL_min: Number.isFinite(qbNeeded) && qbNeeded > 0 ? Math.ceil(qbNeeded / 10) * 10 : null,
         rationale: 'Flows are capped by the filtration-fraction ceiling; delivered dose falls short of target. See warnings.',
       });
     }
@@ -380,7 +360,7 @@
   }
 
   /**
-   * Estimated hourly calcium loss into effluent (order-of-magnitude only:
+   * Estimated hourly calcium loss into effluent (order-of-magnitude only —
    * UI must label this as an estimate, not a prescription).
    */
   function estimateCalciumLoss({ effluentRate_mL_hr, effluentTotalCa_mmol_L = 1.5 }) {
