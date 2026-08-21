@@ -72,7 +72,9 @@ window.CRRTUICalculator = (function () {
   }
 
   function fmt(v, digits = 1) {
-    if (v === null || v === undefined || Number.isNaN(v)) return '—';
+    // Number.isFinite() also rejects Infinity, which zero weight, zero blood
+    // flow, or Hct of 1 would otherwise surface to the user as "Infinity".
+    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
     return v.toFixed(digits);
   }
 
@@ -324,7 +326,13 @@ window.CRRTUICalculator = (function () {
         ${state.modality === 'SCUF'
           ? '<div class="warning-inline">SCUF targets fluid removal rather than a delivered small-solute dose. Set net UF in the editable prescription below.</div>'
           : `<div class="setup-summary"><span>Delivered target <strong>${fmt(num(state.targetDeliveredDose_mL_kg_hr))}</strong></span><span>Downtime <strong>${fmt(downtimePercent, 0)}%</strong></span><span>Downtime-only target <strong>${fmt(basePrescribedTarget)} mL/kg/hr</strong></span></div>
-             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>`}
+             <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered at FF ${fmt(suggestion.predictedFiltrationFraction * 100)}%.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>
+             ${state.setupGenerated && suggestion.targetAchieved === false
+               ? `<div class="warning-inline hard"><strong>Target dose not reached.</strong> Flows are capped by the filtration-fraction ceiling, so the generated prescription delivers ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr rather than the ${fmt(num(state.targetDeliveredDose_mL_kg_hr))} requested.</div>`
+               : ''}
+             ${state.setupGenerated && suggestion.warnings && suggestion.warnings.length
+               ? suggestion.warnings.map(w => `<div class="warning-inline">${w}</div>`).join('')
+               : ''}`}
       </div>`;
   }
 
@@ -807,31 +815,35 @@ FF = (replacementPre + replacementPost + citrate pre-filter + netUF) / (plasma f
       state.bloodFlow_mL_min = suggestion.bloodFlow_mL_min;
       state.dialysateFlow_mL_hr = suggestion.dialysateFlow_mL_hr;
 
-      // Apply protocol pre/post split to the replacement volume.
-      // Citrate: check FF headroom — if citrate already fills most of the
-      // 20% FF budget, all replacement goes post-filter (adding pre-filter
-      // replacement on top of a large pre-filter citrate volume would breach
-      // the FF ceiling). When there is room, use 20% pre / 80% post.
-      // Heparin / heparinized circuit: 50% pre / 50% post.
+      // Apply the protocol pre/post split to the replacement volume.
+      //
+      // IMPORTANT: the engine may have deliberately chosen a HIGH pre-dilution
+      // fraction to hold filtration fraction under its ceiling (this happens at
+      // large body weight, low blood flow, or high haematocrit). The protocol
+      // split is therefore treated as a MINIMUM pre-filter share, never as an
+      // override: we take whichever pre-fraction is larger. Overriding the
+      // engine's value downward would push FF above the ceiling.
       const totalReplacement = suggestion.replacementPre_mL_hr + suggestion.replacementPost_mL_hr;
+      const enginePreFraction = totalReplacement > 0
+        ? suggestion.replacementPre_mL_hr / totalReplacement
+        : 0;
+
+      let desiredPreFraction;
       if (state.anticoag === 'citrate') {
+        // Citrate is itself the pre-filter fluid. If it already fills most of
+        // the FF budget, additional pre-filter replacement is not appropriate.
         const citrateQ = getCitrateFlow();
         const plasmaQ = num(state.bloodFlow_mL_min) * 60 * (1 - num(state.hematocrit));
         const ffFromCitrate = citrateQ / Math.max(plasmaQ + citrateQ, 1);
-        if (ffFromCitrate < 0.16) {
-          // Enough headroom: 20% pre, 80% post.
-          state.replacementPre_mL_hr  = Math.round(totalReplacement * 0.20 / 50) * 50;
-          state.replacementPost_mL_hr = Math.max(0, totalReplacement - state.replacementPre_mL_hr);
-        } else {
-          // Citrate fills most of the FF budget: all replacement post-filter.
-          state.replacementPre_mL_hr  = 0;
-          state.replacementPost_mL_hr = totalReplacement;
-        }
+        desiredPreFraction = ffFromCitrate < 0.16 ? 0.20 : 0;
       } else {
         // Heparin or heparinized circuit: 50% pre, 50% post.
-        state.replacementPre_mL_hr  = Math.round(totalReplacement * 0.50 / 50) * 50;
-        state.replacementPost_mL_hr = Math.max(0, totalReplacement - state.replacementPre_mL_hr);
+        desiredPreFraction = 0.50;
       }
+
+      const preFraction = Math.max(desiredPreFraction, enginePreFraction);
+      state.replacementPre_mL_hr  = Math.round(totalReplacement * preFraction / 50) * 50;
+      state.replacementPost_mL_hr = Math.max(0, totalReplacement - state.replacementPre_mL_hr);
 
       // After shifting replacement pre-filter, the pre-dilution correction
       // reduces effective clearance below target. Compensate by increasing

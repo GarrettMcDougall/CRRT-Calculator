@@ -198,6 +198,28 @@
       );
     }
 
+    // Dose FLOOR check. A dilute pre-filter citrate solution (e.g. Regiocit or
+    // Prismocitrate 18 mmol/L) runs at roughly 10x blood flow in L/hr, so its
+    // volume alone can already exceed the target dose in a small patient or at
+    // a high blood flow. No choice of dialysate or replacement can bring the
+    // dose back down, so this must be surfaced rather than silently delivered.
+    if (citratePre > 0) {
+      const plasmaWater = plasmaFlow * 0.93;
+      const floorEffluent = citratePre + netUltrafiltration_mL_hr;
+      const floorDilution = plasmaWater / Math.max(plasmaWater + citratePre, 1e-6);
+      const floorDelivered = (floorEffluent / weightKg) * floorDilution * uptimeFraction;
+      if (Number.isFinite(floorDelivered) && floorDelivered > targetDeliveredDose_mL_kg_hr * 1.10) {
+        // Blood flow that would bring the citrate-imposed floor down to target.
+        // Citrate flow scales with blood flow, so the floor scales with Qb/weight.
+        const qbForTarget = bloodFlow_mL_min * (targetDeliveredDose_mL_kg_hr / floorDelivered);
+        warnings.push(
+          `The citrate solution alone delivers about ${floorDelivered.toFixed(1)} mL/kg/hr, above the ${targetDeliveredDose_mL_kg_hr.toFixed(1)} mL/kg/hr target, before any dialysate or replacement is added. `
+          + `A dilute pre-filter citrate solution runs at roughly ten times blood flow, so its volume sets a minimum dose. `
+          + `Reduce blood flow to roughly ${Math.round(qbForTarget / 10) * 10} mL/min, switch to a concentrated citrate product, or accept the higher dose and monitor phosphate, magnesium and drug levels closely.`
+        );
+      }
+    }
+
     // Maximum convective volume that keeps FF at or below the ceiling
     // given a pre-dilution fraction p:
     //   (qr + netUF + citratePre) <= FF * (plasmaFlow + qr*p + citratePre)
