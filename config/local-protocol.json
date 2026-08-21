@@ -28,9 +28,9 @@
     "accumulationRatioThreshold": 2.5,
     "effluentTotalCa_mmol_L_default": 1.5,
     "presets": [
-      { "id": "acda", "label": "ACD-A", "citrateConcentration_mmol_L": 113, "isPreFilterDiluent": true, "source": "manufacturer monograph — verify locally", "reviewed": false },
-      { "id": "prismocitrate_18_0", "label": "Prismocitrate 18/0", "citrateConcentration_mmol_L": 18, "isPreFilterDiluent": true, "source": "manufacturer monograph — verify locally", "reviewed": false },
-      { "id": "tsc_4pct", "label": "4% trisodium citrate", "citrateConcentration_mmol_L": 136, "isPreFilterDiluent": true, "source": "manufacturer monograph — verify locally", "reviewed": false },
+      { "id": "acda", "label": "ACD-A", "citrateConcentration_mmol_L": 113, "isPreFilterDiluent": true, "source": "manufacturer monograph: verify locally", "reviewed": false },
+      { "id": "prismocitrate_18_0", "label": "Prismocitrate 18/0", "citrateConcentration_mmol_L": 18, "isPreFilterDiluent": true, "source": "manufacturer monograph: verify locally", "reviewed": false },
+      { "id": "tsc_4pct", "label": "4% trisodium citrate", "citrateConcentration_mmol_L": 136, "isPreFilterDiluent": true, "source": "manufacturer monograph: verify locally", "reviewed": false },
       { "id": "custom", "label": "Custom", "citrateConcentration_mmol_L": null, "isPreFilterDiluent": true, "source": "user-entered", "reviewed": false }
     ],
     "calciumTitrationTable": {
@@ -48,7 +48,7 @@
       ]
     },
     "calciumProducts": {
-      "cacl2_10pct": { "label": "Calcium chloride 10%", "concentration_mmol_mL": 0.68, "note": "Irritant — central line preferred", "reviewed": false },
+      "cacl2_10pct": { "label": "Calcium chloride 10%", "concentration_mmol_mL": 0.68, "note": "Irritant: central line preferred", "reviewed": false },
       "ca_gluconate_10pct": { "label": "Calcium gluconate 10%", "concentration_mmol_mL": 0.22, "note": "Peripherally safer, larger volume needed", "reviewed": false }
     }
   },
@@ -62,7 +62,7 @@
       "antiXa_IU_mL": { "min": 0.3, "max": 0.5, "reviewed": false }
     },
     "titrationTable": {
-      "_note": "Placeholder — replace with local nomogram.",
+      "_note": "Placeholder: replace with local nomogram.",
       "byAPTT": [
         { "aptt_s_below": 45, "action": "Increase infusion by 2 U/kg/hr", "reviewed": false },
         { "aptt_range_s": [45, 60], "action": "No change", "reviewed": false },
@@ -88,7 +88,7 @@
       { "test": "CBC", "frequencyHours": 24, "reviewed": false }
     ],
     "pressureLimits": {
-      "_note": "Machine-specific — replace with your Prismaflex/PrisMax defaults.",
+      "_note": "Machine-specific: replace with your Prismaflex/PrisMax defaults.",
       "access_mmHg": { "min": -250, "max": 0, "reviewed": false },
       "return_mmHg": { "min": 0, "max": 350, "reviewed": false },
       "TMP_mmHg": { "max": 300, "reviewed": false }
