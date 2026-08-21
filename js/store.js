@@ -1,5 +1,5 @@
 /**
- * store.js: localStorage wrapper (UI prefs + teaching progress ONLY,
+ * store.js — localStorage wrapper (UI prefs + teaching progress ONLY,
  * never clinical inputs) and runtime config loader.
  */
 window.CRRTStore = (function () {
@@ -21,7 +21,7 @@ window.CRRTStore = (function () {
     try {
       localStorage.setItem(KEY_PREFIX + key, JSON.stringify(value));
     } catch (e) {
-      /* storage unavailable: fail silently, app still works this session */
+      /* storage unavailable — fail silently, app still works this session */
     }
   }
 
@@ -32,7 +32,7 @@ window.CRRTStore = (function () {
   }
 
   const FILE_PROTOCOL_HINT =
-    "This page was opened directly from disk (file://). Browsers block the app " +
+    "This page was opened directly from disk (file://) — browsers block the app " +
     "from loading its own data files that way. Serve the folder over http instead: " +
     "run `python3 -m http.server` (or `npx serve`) inside the crrt-app folder and " +
     "open the localhost link, or push it to GitHub Pages.";
@@ -67,12 +67,6 @@ window.CRRTStore = (function () {
     }
   }
 
-  /**
-   * version.json is the one file whose whole purpose is telling the person
-   * whether they're looking at a stale copy, so this always bypasses any
-   * HTTP cache (cache: 'no-store'), independent of what the service worker
-   * or browser would otherwise do, and is never memoized across calls.
-   */
   async function loadVersion() {
     try {
       const res = await fetch('version.json', { cache: 'no-store' });
