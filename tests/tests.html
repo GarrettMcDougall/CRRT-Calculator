@@ -316,15 +316,6 @@
   });
   check('R8: 18 mmol/L citrate = 10 x Qb and exact round trip at six blood flows', r8, 0, 0);
 
-  // R9: delivered-dose check from measured effluent (v1.8.0).
-  const R9 = C.deliveredDoseFromEffluent({ effluentVolume_mL: 52000, periodHours: 24, weightKg: 80,
-    dilutionFactor: 0.8, prescribedEffluent_mL_hr: 2600 });
-  check('R9: average effluent = 52 L / 24 h', R9.averageEffluent_mL_hr, 2166.7, 0.1);
-  check('R9: uncorrected delivered = 27.1 mL/kg/hr', R9.deliveredUncorrected_mL_kg_hr, 27.08, 0.01);
-  check('R9: corrected delivered = uncorrected x dilution', R9.deliveredCorrected_mL_kg_hr, 21.67, 0.01);
-  check('R9: effective uptime = 83%', R9.effectiveUptime, 0.833, 0.001);
-  check('R9: invalid input returns valid:false', C.deliveredDoseFromEffluent({ effluentVolume_mL: 0, periodHours: 24, weightKg: 80 }).valid === false ? 1 : 0, 1, 0);
-
   // R10: teaching method agrees with the engine across the prescribing vignettes.
   let r10 = 0;
   [[70, 'citrate', 18, 120, 0.30], [85, 'citrate', 18, 150, 0.28], [95, 'heparin', 18, 200, 0.36], [102.3, 'citrate', 113, 200, 0.32],
@@ -442,13 +433,9 @@
     set('actualWeightKg', 80);
     check('U6: no adult-only warning at 80 kg', /designed for adults/.test(root.textContent) ? 1 : 0, 0, 0);
 
-    // U7: prescription summary tracks the settings.
-    set('netUF', 150);
-    check('U7: summary shows the current net UF', /Net UF \(patient fluid removal\): 150 mL\/hr/.test($('rx-summary').textContent) ? 1 : 0, 1, 0);
-
-    // U8: delivered-dose check renders a result.
-    set('obsEffluent', 52);
-    check('U8: delivered-dose check shows a corrected dose', /pre-dilution corrected/.test($('dd-result').textContent) ? 1 : 0, 1, 0);
+    // U7: citrate and solutions panels start collapsed.
+    check('U7: citrate and solutions panels are collapsed by default',
+      (document.getElementById('panel-solutions') && !document.getElementById('panel-solutions').open) ? 1 : 0, 1, 0);
     root.remove();
 
     // --- Learn tab navigation: restart buttons must work without a hash change ---

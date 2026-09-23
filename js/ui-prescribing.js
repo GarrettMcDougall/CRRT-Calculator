@@ -112,7 +112,7 @@ window.CRRTUIPrescribing = (function () {
     const progress = Store.get('rxCaseProgress', {});
     root.innerHTML = `
       <h1>Prescribing cases</h1>
-      <p class="muted small">Each case walks you through the decisions and the arithmetic of a complete CRRT prescription: dosing weight, effluent, citrate, pre-dilution, the dialysate and replacement split, and filtration fraction.</p>
+      <p class="muted small">Short vignettes. Make the calls, then work out the numbers: weight, effluent, citrate, pre-dilution, the split and FF.</p>
       <div class="grid-cols">
         ${DATA.cases.map(c => `
           <a href="#/learn/prescribing/${c.id}" class="card accent-card mod-${c.tag}" style="text-decoration:none;color:inherit;display:block;">
@@ -191,8 +191,8 @@ window.CRRTUIPrescribing = (function () {
       </div>
       <div class="card">
         <h2>How this works</h2>
-        <p>You will make each prescribing decision and see why the options are preferred, reasonable or best avoided. Then you will calculate the prescription by hand, one step at a time: dosing weight, effluent target, ${isBuilder ? 'citrate flow (if you choose citrate), ' : ''}the pre-dilution correction, the dialysate and replacement split, and filtration fraction.</p>
-        <p class="small muted">Try each calculation before you reveal the working. Values are rounded to 50 mL/hr, as on most machines. Everything here is a generic teaching method; follow your local protocol for real orders.</p>
+        <p>Make each decision, then calculate the prescription by hand one step at a time.</p>
+        <p class="small muted">Try each step before showing the working. Flows are rounded to 50 mL/hr. This is a generic teaching method; follow your local protocol.</p>
         ${nav('Start')}
       </div>`;
   }
@@ -272,8 +272,8 @@ ${basis === 'adjusted' ? `Adjusted weight = IBW + 0.4 × (actual − IBW)
         return {
           title: 'Step 1: dosing weight',
           explain: basis === 'actual'
-            ? 'Dose is expressed per kg, so start with the weight you will dose on. For most patients this is the actual (or pre-illness) weight.'
-            : 'You chose adjusted body weight. Calculate the ideal body weight first, then add 40% of the excess.',
+            ? 'Dose is per kg. Usually actual or pre-illness weight.'
+            : 'Adjusted weight: work out IBW, then add 40% of the excess.',
           inputs: [{ id: 'w', label: 'Dosing weight', unit: 'kg', answer: W, tol: 1 }],
           working,
         };
@@ -281,28 +281,28 @@ ${basis === 'adjusted' ? `Adjusted weight = IBW + 0.4 × (actual − IBW)
       case 'effluent0':
         return {
           title: 'Step 2: effluent target, allowing for downtime',
-          explain: `Your target of ${fmt(rx.target, 1)} mL/kg/hr is a delivered dose. The machine only runs about ${fmt(u * 100)}% of the time, so the hourly effluent while it runs must be higher. Divide by the uptime fraction.`,
+          explain: `${fmt(rx.target, 1)} mL/kg/hr is the delivered target. The circuit runs about ${fmt(u * 100)}% of the day, so divide by uptime.`,
           formula: 'effluent (before pre-dilution) = target × weight ÷ uptime',
           inputs: [{ id: 'e0', label: 'Effluent before pre-dilution correction', unit: 'mL/hr', answer: t.effluentBeforeDilution_mL_hr, tol: 0.02, rel: true }],
           working: `= ${fmt(rx.target, 1)} × ${fmt(W, 1)} ÷ ${fmt(u, 2)} = ${fmt(t.effluentBeforeDilution_mL_hr)} mL/hr`,
-          note: 'Typical adult result: roughly 1500–3000 mL/hr. Effluent includes dialysate, all replacement, net UF, and any citrate solution given pre-filter.',
+          note: 'Usually 1500–3000 mL/hr in adults. Effluent = dialysate + replacement + net UF + any pre-filter citrate.',
         };
       case 'citrate':
         return {
           title: 'Step 3: citrate flow',
-          explain: `Citrate is dosed per litre of blood. A target of ${fmt(rx.citrateDose, 1)} mmol/L at ${rx.bloodFlow} mL/min, using a ${rx.citrateConc} mmol/L solution:`,
+          explain: `Citrate is dosed per litre of blood: ${fmt(rx.citrateDose, 1)} mmol/L at Qb ${rx.bloodFlow}, using ${rx.citrateConc} mmol/L solution.`,
           formula: 'citrate flow (mL/hr) = citrate dose × Qb × 60 ÷ concentration',
           inputs: [{ id: 'cit', label: 'Citrate flow', unit: 'mL/hr', answer: t.citrateFlow_mL_hr, tol: 0.02, rel: true }],
           working: `= ${fmt(rx.citrateDose, 1)} × ${rx.bloodFlow} × 60 ÷ ${rx.citrateConc} = ${fmt(t.citrateFlow_mL_hr)} mL/hr`,
           note: rx.citrateConc < 50
-            ? `Shortcut: an 18 mmol/L solution at 3 mmol/L runs at 10 × Qb. This ${fmt(t.citrateFlow_mL_hr)} mL/hr runs pre-filter, so it counts toward effluent, pre-dilution and filtration fraction.`
-            : `Shortcut: ACD-A at 3 mmol/L runs at about 1.6 × Qb. The volume is small, so it barely changes dose or FF.`,
+            ? `Shortcut: 18 mmol/L at 3 mmol/L ≈ 10 × Qb. It runs pre-filter, so it counts toward effluent, pre-dilution and FF.`
+            : `Shortcut: ACD-A at 3 mmol/L ≈ 1.6 × Qb. Small volume, so little effect on dose or FF.`,
           effects: ['citrateDose'],
         };
       case 'dilution':
         return {
           title: `Step ${cit ? 4 : 3}: pre-dilution correction`,
-          explain: `Fluid added before the filter dilutes the blood, so each mL of effluent clears less. The correction compares plasma flow with plasma flow plus all pre-filter fluid. You don't know the final pre-filter replacement yet, so use a first estimate: ${cit ? 'with citrate this app gives 20% of replacement pre-filter' : 'with heparin or no anticoagulation this app gives 50% of replacement pre-filter'}${rx.modality === 'CVVHD' ? ' (CVVHD has no replacement, so the estimate is 0)' : rx.modality === 'CVVHDF' ? ', and CVVHDF gives half the remaining effluent as replacement' : ''}. First estimate of pre-filter replacement: ${fmt(t.preEstimate_mL_hr)} mL/hr.`,
+          explain: `Pre-filter fluid dilutes the blood, so each mL of effluent clears less. Use a first estimate of pre-filter replacement (${cit ? '20% of replacement with citrate' : '50% of replacement with heparin or no anticoagulation'}${rx.modality === 'CVVHD' ? '; none in CVVHD' : ''}): ${fmt(t.preEstimate_mL_hr)} mL/hr.`,
           formula: 'plasma flow = Qb × 60 × (1 − Hct)\ndilution factor = plasma flow ÷ (plasma flow + pre-filter fluid)',
           inputs: [
             { id: 'qp', label: 'Plasma flow', unit: 'mL/hr', answer: t.plasmaFlow_mL_hr, tol: 0.02, rel: true },
@@ -312,19 +312,19 @@ ${basis === 'adjusted' ? `Adjusted weight = IBW + 0.4 × (actual − IBW)
 pre-filter fluid = ${cit ? `citrate ${fmt(t.citrateFlow_mL_hr)} + ` : ''}replacement estimate ${fmt(t.preEstimate_mL_hr)} = ${fmt(t.preFilterTotal_mL_hr)} mL/hr
 dilution factor = ${fmt(t.plasmaFlow_mL_hr)} ÷ (${fmt(t.plasmaFlow_mL_hr)} + ${fmt(t.preFilterTotal_mL_hr)}) = ${fmt(t.dilutionFactor, 3)}`,
           note: t.dilutionFactor < 0.85
-            ? `A factor of ${fmt(t.dilutionFactor, 2)} means ${fmt((1 - t.dilutionFactor) * 100)}% of the effluent's clearing power is lost to dilution. That is large, and it is mostly the ${cit ? 'citrate solution' : 'pre-filter replacement'}.`
-            : `A factor close to 1 means little is lost to pre-dilution.`,
+            ? `${fmt((1 - t.dilutionFactor) * 100)}% of clearance lost to dilution, mostly from the ${cit ? 'citrate' : 'pre-filter replacement'}.`
+            : `Little lost to pre-dilution.`,
           effects: ['pre'],
         };
       case 'effluent':
         return {
           title: `Step ${cit ? 5 : 4}: effluent target after pre-dilution`,
-          explain: 'Divide the downtime-adjusted effluent by the dilution factor to get the effluent you actually prescribe.',
+          explain: 'Divide by the dilution factor.',
           formula: 'prescribed effluent = effluent before correction ÷ dilution factor',
           inputs: [{ id: 'e', label: 'Prescribed effluent', unit: 'mL/hr', answer: t.effluentTarget_mL_hr, tol: 0.02, rel: true }],
           working: `= ${fmt(t.effluentBeforeDilution_mL_hr)} ÷ ${fmt(t.dilutionFactor, 3)} = ${fmt(t.effluentTarget_mL_hr)} mL/hr
 = ${fmt(t.effluentTarget_mL_hr / W, 1)} mL/kg/hr prescribed, to deliver ${fmt(rx.target, 1)} mL/kg/hr`,
-          note: 'This is why prescribed doses are often 25–35 mL/kg/hr even though the delivered target is 20–25.',
+          note: 'Why prescribed doses run 25–35 mL/kg/hr for a 20–25 delivered target.',
         };
       case 'split': {
         const fixedParts = [];
@@ -340,13 +340,13 @@ dilution factor = ${fmt(t.plasmaFlow_mL_hr)} ÷ (${fmt(t.plasmaFlow_mL_hr)} + ${
         }
         const share = Math.round(t.preShare * 100);
         const how = rx.modality === 'CVVHDF'
-          ? `CVVHDF: half of the remainder as dialysate and half as replacement; replacement ${share}% pre-filter and ${100 - share}% post-filter.`
+          ? `CVVHDF: half dialysate, half replacement (${share}% pre / ${100 - share}% post).`
           : rx.modality === 'CVVH'
-            ? `CVVH: all of the remainder as replacement, ${share}% pre-filter and ${100 - share}% post-filter.`
-            : 'CVVHD: all of the remainder as dialysate.';
+            ? `CVVH: all replacement (${share}% pre / ${100 - share}% post).`
+            : 'CVVHD: all dialysate.';
         return {
           title: `Step ${cit ? 6 : 5}: split the effluent`,
-          explain: `Some of the effluent is already fixed: ${fixedParts.length ? fixedParts.join(' and ') + ' mL/hr' : 'nothing, since net UF is 0 and there is no citrate solution'}. Subtract it, then divide what remains. ${how} Round each to 50 mL/hr.`,
+          explain: `Subtract the fixed volumes (${fixedParts.length ? fixedParts.join(' + ') + ' mL/hr' : 'none here'}), then split the rest. ${how} Round to 50.`,
           formula: 'remainder = prescribed effluent − net UF − citrate',
           inputs,
           working: t.floorExceeded
@@ -355,8 +355,8 @@ Less than 100 mL/hr is left, so no dialysate or replacement is needed: the citra
             : `remainder = ${fmt(t.effluentTarget_mL_hr)} − ${fmt(t.fixed_mL_hr)} = ${fmt(t.remainder_mL_hr)} mL/hr
 ${rx.modality === 'CVVHDF' ? `replacement = ${fmt(t.remainder_mL_hr)} × 0.5 = ${fmt(t.remainder_mL_hr * 0.5)} mL/hr\n` : ''}${rx.modality !== 'CVVHD' ? `pre-filter = ${share}% → ${t.initialSplit.replacementPre_mL_hr} mL/hr; post-filter → ${t.initialSplit.replacementPost_mL_hr} mL/hr\n` : ''}${rx.modality !== 'CVVH' ? `dialysate → ${t.initialSplit.dialysateFlow_mL_hr} mL/hr` : ''}`,
           note: t.floorExceeded
-            ? 'This is the dose floor that a dilute citrate solution creates. If the floor is above target, lower Qb or use a concentrated citrate.'
-            : 'The pre-filter replacement here may differ slightly from the first estimate. One correction round is enough on paper; the Prescribe tab iterates to convergence.',
+            ? 'Dilute citrate sets a dose floor. If it is above target, lower Qb or use a concentrated citrate.'
+            : 'Pre-filter replacement may differ slightly from the estimate. One round is enough on paper.',
           effects: ['dialysate', 'pre', 'post'],
         };
       }
@@ -365,7 +365,7 @@ ${rx.modality === 'CVVHDF' ? `replacement = ${fmt(t.remainder_mL_hr)} × 0.5 = $
         const s0 = t.initialSplit;
         return {
           title: `Step ${cit ? 7 : 6}: filtration fraction`,
-          explain: `Filtration fraction is the share of plasma flowing through the filter that is removed across the membrane. Everything that crosses the membrane counts: all replacement, net UF${cit ? ' and the pre-filter citrate' : ''}. Pre-filter fluid also joins the plasma flow in the denominator. Keep it at or below ${fmt(ceil * 100)}% (the protocol ceiling in config/local-protocol.json).`,
+          explain: `Everything crossing the membrane (replacement, net UF${cit ? ', citrate' : ''}) over plasma flow plus pre-filter fluid. Keep it ≤ ${fmt(ceil * 100)}%.`,
           formula: 'FF = (pre + post + net UF + pre-filter citrate) ÷ (plasma flow + pre + pre-filter citrate)',
           inputs: t.floorExceeded ? [] : [{ id: 'ff', label: 'Filtration fraction', unit: '%', answer: t.initialCheck.filtrationFraction * 100, tol: 0.7, digits: 1 }],
           working: `FF = (${s0.replacementPre_mL_hr} + ${s0.replacementPost_mL_hr} + ${rx.netUF} + ${fmt(t.citrateFlow_mL_hr)}) ÷ (${fmt(t.plasmaFlow_mL_hr)} + ${s0.replacementPre_mL_hr} + ${fmt(t.citrateFlow_mL_hr)})
@@ -373,10 +373,10 @@ ${rx.modality === 'CVVHDF' ? `replacement = ${fmt(t.remainder_mL_hr)} × 0.5 = $
 
 Above the ${fmt(ceil * 100)}% ceiling. Fix: move ${a.move_mL_hr} mL/hr from ${a.from} to ${a.to}.
 New flows: ${rx.modality !== 'CVVH' ? `dialysate ${t.dialysateFlow_mL_hr}, ` : ''}pre ${t.replacementPre_mL_hr}, post ${t.replacementPost_mL_hr} mL/hr → FF ${fmt(a.ffAfter * 100, 1)}%.
-${a.doseEffect === 'none' ? 'Moving replacement into dialysate keeps the effluent, and the dose, the same.' : 'Moving replacement pre-filter lowers FF but adds pre-dilution, so the delivered dose falls a little.'}${a.stillAbove ? '\nFF is still above the ceiling even with all replacement pre-filter. Switch to CVVHDF so part of the dose is dialysate, or raise Qb.' : ''}` : `
+${a.doseEffect === 'none' ? 'Same effluent, same dose.' : 'Lower FF, but more pre-dilution, so dose drops a little.'}${a.stillAbove ? '\nStill above the ceiling with all replacement pre-filter. Use CVVHDF or raise Qb.' : ''}` : `
 
-Within the ${fmt(ceil * 100)}% ceiling. No change needed.`}`,
-          note: 'FF rises with post-filter replacement, net UF, citrate volume and haematocrit. It falls with higher Qb and with moving fluid into dialysate or pre-filter.',
+Under ${fmt(ceil * 100)}%. No change.`}`,
+          note: 'Up with post-filter replacement, net UF, citrate volume and Hct. Down with higher Qb, or by moving fluid to dialysate or pre-filter.',
           effects: ['post'],
         };
       }
@@ -390,7 +390,7 @@ Within the ${fmt(ceil * 100)}% ceiling. No change needed.`}`,
         const diff = chk.correctedDeliveredDose_mL_kg_hr - rx.target;
         return {
           title: `Step ${cit ? 8 : 7}: check the delivered dose`,
-          explain: 'Put the final flows back through the full calculation to confirm the delivered dose.',
+          explain: 'Run the final flows back through to confirm the delivered dose.',
           formula: 'delivered = (effluent ÷ weight) × dilution factor × uptime',
           inputs: [],
           working: `effluent = ${rx.modality !== 'CVVH' ? `${t.dialysateFlow_mL_hr} + ` : ''}${rx.modality !== 'CVVHD' ? `${t.replacementPre_mL_hr} + ${t.replacementPost_mL_hr} + ` : ''}${rx.netUF}${cit ? ` + ${fmt(t.citrateFlow_mL_hr)}` : ''} = ${fmt(chk.effluentRate_mL_hr)} mL/hr
@@ -398,7 +398,7 @@ dilution factor with final flows = ${fmt(chk.dilutionFactor, 3)}
 delivered = (${fmt(chk.effluentRate_mL_hr)} ÷ ${fmt(W, 1)}) × ${fmt(chk.dilutionFactor, 3)} × ${fmt(u, 2)} = ${fmt(chk.correctedDeliveredDose_mL_kg_hr, 1)} mL/kg/hr
 FF = ${fmt(chk.filtrationFraction * 100, 1)}%`,
           note: `${Math.abs(diff) <= 1 ? `Within 1 mL/kg/hr of your ${fmt(rx.target, 1)} target.` : diff > 0 ? `${fmt(diff, 1)} mL/kg/hr above target${t.floorExceeded ? ': the citrate volume alone exceeds the target. Lower Qb or use a concentrated citrate.' : '.'}` : `${fmt(-diff, 1)} mL/kg/hr below target${t.ffAdjustment && t.ffAdjustment.doseEffect === 'falls' ? ', because replacement moved pre-filter to protect FF. Adding dialysate (CVVHDF) would recover it.' : '.'}`}
-For comparison, the Prescribe tab's generator gives: ${rx.modality !== 'CVVH' ? `dialysate ${gen.dialysateFlow_mL_hr}, ` : ''}${rx.modality !== 'CVVHD' ? `pre ${gen.replacementPre_mL_hr}, post ${gen.replacementPost_mL_hr}` : ''} mL/hr, delivering ${fmt(gen.predictedDeliveredDose_mL_kg_hr, 1)} mL/kg/hr at FF ${fmt(gen.predictedFiltrationFraction * 100, 1)}%.`,
+Prescribe tab generator: ${rx.modality !== 'CVVH' ? `dialysate ${gen.dialysateFlow_mL_hr}, ` : ''}${rx.modality !== 'CVVHD' ? `pre ${gen.replacementPre_mL_hr}, post ${gen.replacementPost_mL_hr}` : ''} mL/hr, delivering ${fmt(gen.predictedDeliveredDose_mL_kg_hr, 1)} mL/kg/hr at FF ${fmt(gen.predictedFiltrationFraction * 100, 1)}%.`,
         };
       }
     }
@@ -486,7 +486,7 @@ For comparison, the Prescribe tab's generator gives: ${rx.modality !== 'CVVH' ? 
       <div class="card">
         <span class="eyebrow">Explore</span>
         <h2>Change one thing at a time</h2>
-        <p>Starting from your final prescription, adjust a variable and watch what happens. Compare the effects with citrate and with heparin by trying both paths.</p>
+        <p>Change one variable and see what moves.</p>
         ${vars.map(v => `
           <div class="explore-row">
             <span class="explore-label">${v.label}</span>
@@ -502,7 +502,7 @@ For comparison, the Prescribe tab's generator gives: ${rx.modality !== 'CVVH' ? 
           ${cit ? row('Calcium lost in effluent (illustrative)', b.caLoss, n.caLoss, 'mmol/hr', 2) : ''}
         </div>
         ${n.d.filtrationFraction > ceil ? `<div class="warning-inline">FF is above the ${fmt(ceil * 100)}% ceiling.</div>` : ''}
-        ${last ? renderEffects(EXPLORE_VARS.find(v => v.key === last).effect) : '<p class="small muted">Press + or − to see the effect and the explanation.</p>'}
+        ${last ? renderEffects(EXPLORE_VARS.find(v => v.key === last).effect) : '<p class="small muted">Press + or −.</p>'}
         <div class="mt-4"><button type="button" class="secondary" id="exploreReset">Reset to my prescription</button></div>
         ${nav('See the order')}
       </div>`;

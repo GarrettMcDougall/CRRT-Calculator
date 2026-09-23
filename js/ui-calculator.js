@@ -54,10 +54,8 @@ window.CRRTUICalculator = (function () {
     pH: '',
     hco3_mmol_L: '',
 
-    // delivered-dose check (what the machine actually removed)
-    obsEffluent_L: '',
-    obsPeriod_h: 24,
-    obsRunning_h: '',
+    // collapsible panels (closed by default; remembered while the page is open)
+    ui: { citrateOpen: false, solutionsOpen: false },
 
     // solutions
     serumPO4_mmol_L: '',
@@ -226,12 +224,10 @@ window.CRRTUICalculator = (function () {
           ${renderSetupCard(bmi, suggestion)}
           ${renderPlatformCard()}
           ${renderCircuitCard(dose)}
-          ${state.modality !== 'SCUF' ? renderDeliveredCheckCard() : ''}
           ${state.anticoag === 'citrate' ? renderCitratePanel(dose) : ''}
           ${state.anticoag === 'heparin' ? renderHeparinPanel() : ''}
           ${state.anticoag === 'heparinized' ? renderHeparinizedPanel() : ''}
           ${renderSolutionsPanel(dose)}
-          ${renderSummaryCard()}
         </div>
         <div>
           <div class="card schematic-wrap ${accent().cls}">
@@ -562,156 +558,6 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
     </div>`;
   }
 
-  // ---- delivered-dose check ----------------------------------------------
-  function deliveredCheck() {
-    const dose = computeDose();
-    const vol = num(state.obsEffluent_L, NaN) * 1000;
-    const r = C.deliveredDoseFromEffluent({
-      effluentVolume_mL: vol,
-      periodHours: num(state.obsPeriod_h, NaN),
-      weightKg: num(state.weightKg),
-      dilutionFactor: dose.dilutionFactor,
-      prescribedEffluent_mL_hr: dose.effluentRate_mL_hr,
-      runningHours: state.obsRunning_h === '' ? null : num(state.obsRunning_h, NaN),
-    });
-    return r;
-  }
-
-  function renderDeliveredResult() {
-    if (state.obsEffluent_L === '') return '<div class="small muted">Enter the effluent volume the machine reports to compare what was delivered with the target.</div>';
-    const r = deliveredCheck();
-    if (!r.valid) return '<div class="warning-inline">Enter an effluent volume, a period and a dosing weight above zero.</div>';
-    const target = num(state.targetDeliveredDose_mL_kg_hr);
-    const d = r.deliveredCorrected_mL_kg_hr;
-    const flag = d < 20 || d > 25 ? 'amber' : 'green';
-    const uptime = r.reportedUptime ?? r.effectiveUptime;
-    const uptimeLabel = r.reportedUptime !== null ? 'Reported uptime' : 'Effective uptime (average effluent ÷ current prescribed rate)';
-    const msgs = [];
-    if (d < target - 1) {
-      const suggestDowntime = uptime !== null && uptime > 0 && uptime < 1 ? Math.round((1 - uptime) * 100) : null;
-      msgs.push(`Delivered dose is below the ${fmt(target)} mL/kg/hr target.${suggestDowntime !== null ? ` Observed downtime is about ${suggestDowntime}%. Setting expected downtime in Step 1 to ${suggestDowntime}% and regenerating would compensate, if the cause of the downtime cannot be fixed.` : ''} Look for avoidable causes first: filter clotting, access problems, transport and delays in circuit changes.`);
-    } else if (d > target * 1.10) {
-      msgs.push(`Delivered dose is above the ${fmt(target)} mL/kg/hr target. Consider reducing flows unless a higher dose is intended.`);
-    }
-    if (r.effectiveUptime !== null && r.effectiveUptime > 1.05) {
-      msgs.push('The measured effluent is higher than the current prescription could produce. The settings probably changed during the period, so the comparison with the current prescription is approximate.');
-    }
-    return `
-      <div class="output-block">
-        <div class="output-row"><span class="label">Average effluent rate</span><span class="value">${fmt(r.averageEffluent_mL_hr, 0)} mL/hr</span></div>
-        <div class="output-row"><span class="label">Delivered dose, uncorrected</span><span class="value">${fmt(r.deliveredUncorrected_mL_kg_hr)} mL/kg/hr</span></div>
-        <div class="output-row"><span class="label">Delivered dose, pre-dilution corrected</span><span class="value big">${fmt(d)} mL/kg/hr <span class="flag ${flag}">${flag === 'green' ? 'in range' : 'outside 20–25'}</span></span></div>
-        ${uptime !== null ? `<div class="output-row"><span class="label">${uptimeLabel}</span><span class="value">${fmt(uptime * 100, 0)}%</span></div>` : ''}
-      </div>
-      ${msgs.map(m => `<div class="warning-inline">${m}</div>`).join('')}
-      <p class="small muted">The pre-dilution correction uses the current blood flow, haematocrit, pre-filter replacement and citrate, so it assumes these were unchanged over the period.</p>`;
-  }
-
-  function renderDeliveredCheckCard() {
-    return `
-    <div class="card">
-      <span class="eyebrow">After running</span>
-      <h2>Check the delivered dose</h2>
-      <p class="small muted">KDIGO advises checking the dose actually delivered, not just the prescribed rate. Enter the total effluent volume from the machine's history screen.</p>
-      <div class="input-row aligned-row">
-        <div class="field">
-          <label for="obsEffluent">Effluent volume <span class="unit">L</span></label>
-          <input type="number" id="obsEffluent" value="${state.obsEffluent_L}" min="0" step="0.1">
-        </div>
-        <div class="field">
-          <label for="obsPeriod">Over <span class="unit">hours</span></label>
-          <input type="number" id="obsPeriod" value="${state.obsPeriod_h}" min="1" max="72" step="1">
-        </div>
-        <div class="field">
-          <label for="obsRunning">Hours running <span class="unit">optional</span></label>
-          <input type="number" id="obsRunning" value="${state.obsRunning_h}" min="0" max="72" step="0.5">
-        </div>
-      </div>
-      <div id="dd-result">${renderDeliveredResult()}</div>
-    </div>`;
-  }
-
-  // ---- copyable prescription summary --------------------------------------
-  function buildSummary() {
-    const i = engineInputs();
-    const dose = computeDose();
-    const dialysate = productById(state.dialysateProductId);
-    const replacement = productById(state.replacementProductId);
-    const citrate = productById(state.citrateProductId);
-    const versionTag = (document.getElementById('version-tag')?.textContent || '').trim();
-    const lines = [];
-    lines.push('CRRT prescription (draft: verify against local protocol before ordering)');
-    lines.push(`Dosing weight: ${fmt(i.weightKg)} kg (${state.weightBasis === 'actual' ? 'actual' : state.weightBasis === 'ideal' ? 'ideal' : state.weightBasis === 'adjusted' ? 'adjusted' : 'custom'} weight basis)`);
-    lines.push(`Modality: ${state.modality}`);
-    if (state.anticoag === 'citrate') {
-      lines.push(`Anticoagulation: regional citrate, ${citrate?.name || 'product not selected'}${num(state.citrateConcentration_mmol_L) > 0 ? ` ${fmt(num(state.citrateConcentration_mmol_L), 0)} mmol/L` : ''}, ${fmt(i.citrateFlow_mL_hr, 0)} mL/hr (target ${fmt(num(state.citrateTargetDose_mmol_L), 1)} mmol/L blood). Calcium replacement per local nomogram.`);
-    } else if (state.anticoag === 'heparin') {
-      lines.push('Anticoagulation: systemic heparin per local protocol and nomogram.');
-    } else {
-      lines.push('Anticoagulation: heparinized circuit only (no systemic or regional anticoagulation).');
-    }
-    lines.push(`Blood flow (Qb): ${fmt(i.bloodFlow_mL_min, 0)} mL/min`);
-    if (state.modality !== 'CVVH' && state.modality !== 'SCUF') lines.push(`Dialysate: ${fmt(i.dialysateFlow_mL_hr, 0)} mL/hr${dialysate ? `, ${dialysate.name}` : ''}`);
-    if (state.modality !== 'CVVHD' && state.modality !== 'SCUF') lines.push(`Replacement: pre-filter ${fmt(i.replacementPre_mL_hr, 0)} mL/hr, post-filter ${fmt(i.replacementPost_mL_hr, 0)} mL/hr${replacement ? `, ${replacement.name}` : ''}`);
-    lines.push(`Net UF (patient fluid removal): ${fmt(i.netUltrafiltration_mL_hr, 0)} mL/hr`);
-    lines.push(`Effluent: ${fmt(dose.effluentRate_mL_hr, 0)} mL/hr; prescribed ${fmt(dose.prescribedDose_mL_kg_hr)} mL/kg/hr`);
-    if (state.modality !== 'SCUF') lines.push(`Expected delivered dose: ${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr (target ${fmt(num(state.targetDeliveredDose_mL_kg_hr))}, ${fmt((1 - i.uptimeFraction) * 100, 0)}% downtime and pre-dilution included)`);
-    lines.push(`Filtration fraction: ${fmt(dose.filtrationFraction * 100)}% (ceiling ${fmt(i.ffCeiling * 100, 0)}%)`);
-    const warnings = [];
-    if (adultGuardWarning()) warnings.push('Weight below the adult range for this calculator.');
-    currentSettingWarnings(dose).forEach(w => warnings.push(w.text));
-    if (state.setupGenerated && !state.machineEdited) {
-      const sug = computeSuggestion();
-      (sug.warnings || []).forEach(w => warnings.push(w));
-    }
-    if (warnings.length) {
-      lines.push('Warnings:');
-      warnings.forEach(w => lines.push(`- ${w}`));
-    }
-    lines.push(`Generated by CRRT Prescribe & Learn${versionTag ? ` (${versionTag})` : ''}. Educational tool; not a validated order.`);
-    return lines.join('\n');
-  }
-
-  function renderSummaryCard() {
-    return `
-    <div class="card">
-      <h2>Prescription summary</h2>
-      <p class="small muted">Plain text for the chart or handover. It updates as you edit. Review every line before using it.</p>
-      <pre class="rx-summary" id="rx-summary">${escapeHtml(buildSummary())}</pre>
-      <div class="generate-btn-wrap">
-        <button type="button" class="primary" id="copySummary">Copy summary</button>
-      </div>
-      <div class="small muted" id="copyStatus" aria-live="polite"></div>
-    </div>`;
-  }
-
-  function escapeHtml(t) {
-    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  async function copyText(text) {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (e) { /* fall through to the legacy path */ }
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand && document.execCommand('copy');
-      ta.remove();
-      return !!ok;
-    } catch (e) {
-      return false;
-    }
-  }
-
   // -----------------------------------------------------------------------
   function renderCitratePanel(dose) {
     const citrateProduct = productById(state.citrateProductId);
@@ -753,9 +599,13 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
       normal: { title: 'No acid-base concern flagged', body: '', cls: 'green' },
     };
 
+    const citrateAlert = !citrateAvailable || doseCheck.doseFlag === 'red' || (accumulation && accumulation.accumulationFlag) || acidBase === 'acidosis_accumulation';
     return `
-    <div class="card accent-card mod-citrate">
-      <h2><span class="tag">Citrate</span> Regional citrate anticoagulation</h2>
+    <details class="card accent-card mod-citrate collapsible" id="panel-citrate" ${state.ui.citrateOpen ? 'open' : ''}>
+      <summary>
+        <h2><span class="tag">Citrate</span> Regional citrate anticoagulation</h2>
+        <span class="collapsed-hint">${citrateAvailable ? `Citrate ${fmt(citrateFlow, 0)} mL/hr` : 'No citrate product selected'}${citrateAlert ? ' <span class="flag red">review</span>' : ''}</span>
+      </summary>
       <p class="small muted">Please defer to local protocols and nomogram.</p>
       ${!citrateAvailable ? '<div class="warning-inline hard">No verified citrate product is selected. Choose the actual product in Step 2 before using any citrate-flow result.</div>' : ''}
 
@@ -834,7 +684,7 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
         <p class="small">${acidBaseCopy[acidBase].body}</p>
       </div>` : ''}
       <p class="small muted">1 mmol citrate metabolised → 3 mmol bicarbonate regenerated. Also watch for hypernatraemia with concentrated trisodium citrate, and expect hypomagnesaemia with RCA.</p>
-    </div>`;
+    </details>`;
   }
 
   function renderCalciumTitrationTable() {
@@ -935,9 +785,15 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
       naCheck = C.sodiumGradientCheck({ serumNa_mmol_L: num(state.serumNa_mmol_L), solutionNa_mmol_L: selectedNa ?? num(state.solutionNa_mmol_L) });
     }
 
+    const guidanceCount = [renderSolutionGuidance(state.modality !== 'CVVH' && state.modality !== 'SCUF' ? dialysate : null, 'x'),
+      renderSolutionGuidance(state.modality !== 'CVVHD' && state.modality !== 'SCUF' ? replacement : null, 'x')].join('').split('warning-inline').length - 1;
+    const solutionsAlert = (naCheck && naCheck.flag) || guidanceCount > 0;
     return `
-    <div class="card">
-      <h2>Solutions &amp; electrolytes</h2>
+    <details class="card collapsible" id="panel-solutions" ${state.ui.solutionsOpen ? 'open' : ''}>
+      <summary>
+        <h2>Solutions &amp; electrolytes</h2>
+        <span class="collapsed-hint">${[productById(state.dialysateProductId), productById(state.replacementProductId)].filter(Boolean).map(p => p.name).filter((v, i, a) => a.indexOf(v) === i).join(', ') || 'No products selected'}${solutionsAlert ? ' <span class="flag red">review</span>' : ''}</span>
+      </summary>
 
       <p class="small muted">Showing ${selectedBrand().label} products for ${state.marketRegion === 'ALL' ? 'all listed markets' : state.marketRegion}. Greyed-out products remain in the catalogue for recognition, but cannot drive calculations until the current full composition is verified.</p>
 
@@ -975,7 +831,7 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
       ${naCheck.flag ? `<div class="warning-inline hard">A large solution-to-serum gradient can cause an unsafe correction rate. The gradient alone does not predict the 24-hour change. Build a patient-specific sodium plan, with frequent checks and local pharmacy/nephrology input, before starting.</div>` : ''}` : ''}
 
       <p class="small muted mt-4">Catalogue values support education and consistency checks, not product substitution. Verify the bag label, current monograph, connector compatibility and institution-approved protocol before use. Also expect magnesium losses with RCA, and re-check drug dosing against a CRRT-specific reference.</p>
-    </div>`;
+    </details>`;
   }
 
   // ---- live update while typing (no full re-render, so focus is kept) ----
@@ -989,10 +845,6 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
     if (ffBadge) { ffBadge.textContent = dose.ffFlag; ffBadge.className = 'flag ' + dose.ffFlag; }
     const warn = document.getElementById('out-warnings');
     if (warn) warn.innerHTML = renderCurrentWarnings(dose);
-    const dd = document.getElementById('dd-result');
-    if (dd) dd.innerHTML = renderDeliveredResult();
-    const rx = document.getElementById('rx-summary');
-    if (rx) rx.textContent = buildSummary();
     const mobD = document.getElementById('mob-delivered');
     if (mobD) mobD.textContent = fmt(dose.correctedDeliveredDose_mL_kg_hr) + ' mL/kg/hr';
     const mobF = document.getElementById('mob-ff');
@@ -1120,16 +972,10 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)</d
     bind('pH', 'pH');
     bind('hco3', 'hco3_mmol_L');
 
-    // delivered-dose check
-    bind('obsEffluent', 'obsEffluent_L');
-    bind('obsPeriod', 'obsPeriod_h');
-    bind('obsRunning', 'obsRunning_h');
-
-    const copyBtn = el('copySummary');
-    if (copyBtn) copyBtn.addEventListener('click', async () => {
-      const ok = await copyText(buildSummary());
-      const status = el('copyStatus');
-      if (status) status.textContent = ok ? 'Copied to clipboard.' : 'Copy failed. Select the text above and copy it manually.';
+    // Remember which collapsible panels are open across re-renders.
+    [['panel-citrate', 'citrateOpen'], ['panel-solutions', 'solutionsOpen']].forEach(([id, key]) => {
+      const node = el(id);
+      if (node) node.addEventListener('toggle', () => { state.ui[key] = node.open; });
     });
 
     // solutions

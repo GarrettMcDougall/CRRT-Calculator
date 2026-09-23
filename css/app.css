@@ -298,20 +298,16 @@ details.working {
 details.working summary { cursor: pointer; color: var(--citrate); font-weight: 600; }
 details.working .formula { font-family: var(--font-mono); background: var(--ground); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); margin-top: var(--sp-2); white-space: pre-wrap; }
 
-.rx-summary {
-  font-family: var(--font-mono);
-  font-size: var(--fs-small);
-  background: var(--ground);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  padding: var(--sp-3);
-  white-space: pre-wrap;
-  word-break: break-word;
-  user-select: text;
-  -webkit-user-select: text;
-  max-height: 22rem;
-  overflow-y: auto;
-}
+
+/* ---------- Collapsible cards ---------- */
+details.collapsible > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); }
+details.collapsible > summary::-webkit-details-marker { display: none; }
+details.collapsible > summary h2 { margin: 0; flex: 1 1 auto; }
+details.collapsible > summary h2::before { content: '▸'; display: inline-block; width: 1.1em; color: var(--muted); transition: transform 0.15s; }
+details.collapsible[open] > summary h2::before { transform: rotate(90deg); }
+details.collapsible > summary .collapsed-hint { font-size: var(--fs-small); color: var(--muted); font-family: var(--font-mono); }
+details.collapsible[open] > summary { margin-bottom: var(--sp-3); }
+details.collapsible[open] > summary .collapsed-hint { display: none; }
 
 /* ---------- Learn to prescribe ---------- */
 .teach-box { border-left: 3px solid var(--citrate); background: var(--panel-raised); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); margin-top: var(--sp-3); }

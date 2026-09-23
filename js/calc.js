@@ -574,55 +574,6 @@
   // ---------------------------------------------------------------------
 
   /**
-   * Delivered-dose check from what the machine actually removed.
-   *
-   * KDIGO advises checking the delivered dose, not just the prescribed one.
-   * The measured effluent volume already includes downtime, so no uptime
-   * factor is applied. The pre-dilution correction uses the dilution factor
-   * of the current settings, which assumes they were unchanged over the
-   * period.
-   *
-   * @param {number} effluentVolume_mL     total effluent over the period
-   * @param {number} periodHours           length of the period (usually 24)
-   * @param {number} weightKg              dosing weight
-   * @param {number} [dilutionFactor=1]    from computeDoseAndFF for the current settings
-   * @param {number} [prescribedEffluent_mL_hr]  current prescribed effluent rate
-   * @param {number} [runningHours]        hours the circuit actually ran, if known
-   */
-  function deliveredDoseFromEffluent({
-    effluentVolume_mL,
-    periodHours = 24,
-    weightKg,
-    dilutionFactor = 1,
-    prescribedEffluent_mL_hr = null,
-    runningHours = null,
-  }) {
-    const valid = Number.isFinite(effluentVolume_mL) && effluentVolume_mL > 0 &&
-      Number.isFinite(periodHours) && periodHours > 0 &&
-      Number.isFinite(weightKg) && weightKg > 0;
-    if (!valid) return { valid: false };
-    const df = Number.isFinite(dilutionFactor) && dilutionFactor > 0 && dilutionFactor <= 1 ? dilutionFactor : 1;
-    const averageEffluent_mL_hr = effluentVolume_mL / periodHours;
-    const deliveredUncorrected_mL_kg_hr = averageEffluent_mL_hr / weightKg;
-    const deliveredCorrected_mL_kg_hr = deliveredUncorrected_mL_kg_hr * df;
-    const effectiveUptime = Number.isFinite(prescribedEffluent_mL_hr) && prescribedEffluent_mL_hr > 0
-      ? averageEffluent_mL_hr / prescribedEffluent_mL_hr
-      : null;
-    const reportedUptime = Number.isFinite(runningHours) && runningHours > 0 && runningHours <= periodHours
-      ? runningHours / periodHours
-      : null;
-    return {
-      valid: true,
-      averageEffluent_mL_hr,
-      deliveredUncorrected_mL_kg_hr,
-      deliveredCorrected_mL_kg_hr,
-      dilutionFactorUsed: df,
-      effectiveUptime,
-      reportedUptime,
-    };
-  }
-
-  /**
    * Hand-calculation method for teaching. Returns every intermediate value
    * so the Learn tab can walk a trainee through the arithmetic one step at a
    * time. It uses one correction round for pre-dilution (what a clinician
@@ -754,7 +705,6 @@
 
   return {
     teachingPrescription,
-    deliveredDoseFromEffluent,
     computeDoseAndFF,
     suggestPrescription,
     computeBMIAndAdjustedWeight,
