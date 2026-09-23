@@ -1,5 +1,5 @@
 /**
- * schematic.js — renders the live circuit SVG shared by the Prescribe
+ * schematic.js: renders the live circuit SVG shared by the Prescribe
  * calculator and the troubleshooting simulator. Pure function: state in,
  * SVG markup out. No DOM writes here.
  */
@@ -16,6 +16,8 @@ window.CRRTSchematic = (function () {
    * @param {number} s.ff  filtration fraction 0-1
    * @param {string} s.accentVar  CSS var name, e.g. '--citrate' or '--heparin'
    * @param {Object} [s.pressures] { access, filter, returnP, tmp } mmHg, or null
+   * @param {number} [s.ffCeiling]  amber above this (default 0.25)
+   * @param {number} [s.ffRedThreshold]  red above this (default 0.30)
    * @param {Object} [s.alarm] { zone: 'access'|'filter'|'return'|'air'|'leak'|null }
    */
   function render(s) {
@@ -27,11 +29,17 @@ window.CRRTSchematic = (function () {
       accentVar = '--citrate',
       pressures = null,
       alarm = null,
+      ffCeiling = 0.25,
+      ffRedThreshold = 0.30,
     } = s;
 
-    const safeQb = Number.isFinite(qb_mL_min) ? qb_mL_min : 0;
+    // Inputs may arrive as strings from form fields; coerce before testing.
+    const qbNum = Number(qb_mL_min);
+    const ffNum = Number(ff);
+    const safeQb = Number.isFinite(qbNum) ? qbNum : 0;
     const lineWidth = clamp(2 + safeQb / 60, 2, 8).toFixed(1);
-    const filterColor = ff > 0.30 ? 'var(--alarm)' : ff > 0.25 ? 'var(--amber)' : `var(${accentVar})`;
+    const redAt = Math.max(ffRedThreshold, ffCeiling);
+    const filterColor = ffNum > redAt ? 'var(--alarm)' : ffNum > ffCeiling ? 'var(--amber)' : `var(${accentVar})`;
 
     const zoneStroke = (zone) => (alarm && alarm.zone === zone ? 'var(--alarm)' : 'var(--hairline)');
     const zoneWidth = (zone) => (alarm && alarm.zone === zone ? 3 : 1);
@@ -57,7 +65,7 @@ window.CRRTSchematic = (function () {
   <!-- Pump -->
   <circle cx="180" cy="165" r="20" class="box"/>
   <text x="180" y="169" text-anchor="middle" class="lbl">Qb</text>
-  <text x="180" y="200" text-anchor="middle" class="lbl">${Number.isFinite(qb_mL_min) ? qb_mL_min : '\u2014'} mL/min</text>
+  <text x="180" y="200" text-anchor="middle" class="lbl">${Number.isFinite(qbNum) ? qbNum : '\u2013'} mL/min</text>
 
   <!-- Pre-filter port -->
   <line x1="200" y1="165" x2="260" y2="165" stroke="var(--hairline)" stroke-width="${lineWidth}"/>
@@ -67,7 +75,7 @@ window.CRRTSchematic = (function () {
   <!-- Filter -->
   <rect x="260" y="130" width="60" height="70" rx="6" fill="${filterColor}" opacity="0.18" stroke="${filterColor}" stroke-width="2"/>
   <text x="290" y="169" text-anchor="middle" class="lbl" fill="${filterColor}">filter</text>
-  <text x="290" y="215" text-anchor="middle" class="lbl">FF ${Number.isFinite(ff) ? (ff * 100).toFixed(1) + '%' : '\u2014'}</text>
+  <text x="290" y="215" text-anchor="middle" class="lbl">FF ${Number.isFinite(ffNum) ? (ffNum * 100).toFixed(1) + '%' : '\u2013'}</text>
 
   <!-- Effluent line -->
   <line x1="290" y1="200" x2="290" y2="270" stroke="${zoneStroke('effluent')}" stroke-width="2"/>
@@ -92,9 +100,9 @@ window.CRRTSchematic = (function () {
   <text x="535" y="184" text-anchor="middle" class="lbl">Patient</text>
 
   ${pressures ? `
-  <text x="125" y="230" text-anchor="middle" class="lbl">${pressures.access ?? '—'} mmHg</text>
-  <text x="290" y="230" text-anchor="middle" class="lbl">TMP ${pressures.tmp ?? '—'} mmHg</text>
-  <text x="464" y="230" text-anchor="middle" class="lbl">${pressures.returnP ?? '—'} mmHg</text>
+  <text x="125" y="230" text-anchor="middle" class="lbl">${pressures.access ?? '–'} mmHg</text>
+  <text x="290" y="230" text-anchor="middle" class="lbl">TMP ${pressures.tmp ?? '–'} mmHg</text>
+  <text x="464" y="230" text-anchor="middle" class="lbl">${pressures.returnP ?? '–'} mmHg</text>
   ` : ''}
 </svg>`;
   }

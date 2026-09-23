@@ -19,6 +19,8 @@
 <div id="summary"></div>
 
 <script src="../js/calc.js"></script>
+<script src="../js/schematic.js"></script>
+<script src="../js/ui-calculator.js"></script>
 <script>
 (function () {
   const C = window.CRRTCalc;
@@ -187,7 +189,7 @@
     citratePreFilter: true,
   });
   check('K: suggested delivered dose is near 22.5', K.predictedDeliveredDose_mL_kg_hr, 22.5, 0.8);
-  check('K: suggested FF is at or below 20%', K.predictedFiltrationFraction <= 0.205 ? 1 : 0, 1, 0);
+  check('K: suggested FF is at or below the 25% default ceiling', K.predictedFiltrationFraction <= 0.2505 ? 1 : 0, 1, 0);
   check('K: target reported as achieved', K.targetAchieved === true ? 1 : 0, 1, 0);
 
   // --- K2: FF ceiling must hold across modalities, weights, and blood flows ---
@@ -208,7 +210,7 @@
   let k2Breaches = 0, k2Unwarned = 0;
   K2cases.forEach(cfg => {
     const s = C.suggestPrescription(Object.assign({ hematocrit: 0.30, uptimeFraction: 0.90 }, cfg));
-    if (Number.isFinite(s.predictedFiltrationFraction) && s.predictedFiltrationFraction > 0.205) k2Breaches++;
+    if (Number.isFinite(s.predictedFiltrationFraction) && s.predictedFiltrationFraction > 0.2505) k2Breaches++;
     if (s.targetAchieved === false && (!s.warnings || s.warnings.length === 0)) k2Unwarned++;
     if (s.replacementPre_mL_hr < 0 || s.replacementPost_mL_hr < 0 || s.dialysateFlow_mL_hr < 0) k2Unwarned++;
   });
@@ -221,6 +223,96 @@
     hematocrit: 0.45, netUltrafiltration_mL_hr: 800, uptimeFraction: 0.90,
   });
   check('K3: impossible net UF at low Qb produces a warning', K3.warnings.length > 0 ? 1 : 0, 1, 0);
+
+  // --- v1.7.0 regression tests (audit 2026-09-23) ---
+
+  // R1: configurable ceiling is a hard constraint at 20% as well as 25%.
+  let r1 = 0;
+  [0.20, 0.25, 0.30].forEach(ceil => {
+    [40, 80, 120, 150].forEach(w => {
+      ['CVVH', 'CVVHDF'].forEach(m => {
+        const s = C.suggestPrescription({ weightKg: w, hematocrit: 0.30, modality: m, bloodFlow_mL_min: 150,
+          targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, ffCeiling: ceil, preFilterShare: 0.5 });
+        if (s.predictedFiltrationFraction > ceil + 1e-9) r1++;
+      });
+    });
+  });
+  check('R1: FF never exceeds the configured ceiling (20/25/30%)', r1, 0, 0);
+
+  // R2: flags follow the configured ceiling.
+  const R2 = C.computeDoseAndFF({ weightKg: 80, hematocrit: 0.3, bloodFlow_mL_min: 150,
+    replacementPost_mL_hr: 1400, ffCeiling: 0.20, ffRedThreshold: 0.30 });
+  check('R2: FF 22% is amber with a 20% ceiling', R2.ffFlag === 'amber' ? 1 : 0, 1, 0);
+  const R2b = C.computeDoseAndFF({ weightKg: 80, hematocrit: 0.3, bloodFlow_mL_min: 150,
+    replacementPost_mL_hr: 1400, ffCeiling: 0.25, ffRedThreshold: 0.30 });
+  check('R2: FF 22% is green with a 25% ceiling', R2b.ffFlag === 'green' ? 1 : 0, 1, 0);
+
+  // R3: protocol pre-filter share is applied inside the engine (no UI split).
+  const R3h = C.suggestPrescription({ weightKg: 80, hematocrit: 0.3, modality: 'CVVHDF', bloodFlow_mL_min: 150,
+    targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, preFilterShare: 0.5 });
+  check('R3: heparin 50/50 split of replacement',
+    Math.abs(R3h.replacementPre_mL_hr - R3h.replacementPost_mL_hr) <= 50 ? 1 : 0, 1, 0);
+  const R3c = C.suggestPrescription({ weightKg: 80, hematocrit: 0.3, modality: 'CVVHDF', bloodFlow_mL_min: 150,
+    targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, citrateFlow_mL_hr: 239, preFilterShare: 0.2 });
+  const r3share = R3c.replacementPre_mL_hr / (R3c.replacementPre_mL_hr + R3c.replacementPost_mL_hr);
+  check('R3: citrate pre-filter share at least 20% (minus rounding)', r3share >= 0.14 ? 1 : 0, 1, 0);
+
+  // R4: no false "target not reached" from rounding at normal weights.
+  let r4 = 0;
+  [40, 60, 80, 100, 120, 150].forEach(w => {
+    [[0, 0.5], [239, 0.2], [1500, 0.2]].forEach(([cit, share]) => {
+      ['CVVHDF', 'CVVHD'].forEach(m => {
+        const s = C.suggestPrescription({ weightKg: w, hematocrit: 0.3, modality: m, bloodFlow_mL_min: 150,
+          targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, netUltrafiltration_mL_hr: 100,
+          citrateFlow_mL_hr: cit, preFilterShare: share });
+        if (s.targetAchieved === false) r4++;
+        if (s.predictedDeliveredDose_mL_kg_hr < 24.5) r4++;
+      });
+    });
+  });
+  check('R4: CVVHDF/CVVHD reach target within 0.5 mL/kg/hr at 40 to 150 kg', r4, 0, 0);
+
+  // R5: dilute citrate dose floor warns; tiny post-filter flows are not generated.
+  const R5 = C.suggestPrescription({ weightKg: 40, hematocrit: 0.3, modality: 'CVVHDF', bloodFlow_mL_min: 150,
+    targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, netUltrafiltration_mL_hr: 100,
+    citrateFlow_mL_hr: 1500, preFilterShare: 0.2 });
+  check('R5: 40 kg with Regiocit at Qb 150 warns about the citrate dose floor',
+    R5.warnings.some(w => /citrate solution/.test(w)) ? 1 : 0, 1, 0);
+  let r5tiny = 0;
+  [60, 80, 100, 120, 150].forEach(w => {
+    const s = C.suggestPrescription({ weightKg: w, hematocrit: 0.3, modality: 'CVVHDF', bloodFlow_mL_min: 150,
+      targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, netUltrafiltration_mL_hr: 100,
+      citrateFlow_mL_hr: 1500, preFilterShare: 0.2 });
+    if (s.replacementPost_mL_hr > 0 && s.replacementPost_mL_hr < 100) r5tiny++;
+  });
+  check('R5: no post-filter replacement below 100 mL/hr in generated CVVHDF', r5tiny, 0, 0);
+
+  // R6: invalid inputs are rejected with a warning instead of producing flows.
+  let r6 = 0;
+  [{ hematocrit: -0.1 }, { hematocrit: 1 }, { uptimeFraction: 0 }, { weightKg: 0 },
+   { bloodFlow_mL_min: 0 }, { netUltrafiltration_mL_hr: -100 }, { targetDeliveredDose_mL_kg_hr: 0 }].forEach(bad => {
+    const s = C.suggestPrescription(Object.assign({ weightKg: 80, hematocrit: 0.3, modality: 'CVVHDF',
+      bloodFlow_mL_min: 150, targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9 }, bad));
+    if (s.warnings.length === 0 || s.targetAchieved !== false) r6++;
+    if ([s.dialysateFlow_mL_hr, s.replacementPre_mL_hr, s.replacementPost_mL_hr].some(f => !Number.isFinite(f) || f < 0)) r6++;
+  });
+  check('R6: invalid inputs warn and return finite, non-negative flows', r6, 0, 0);
+
+  // R7: overshoot from fixed volumes or rounding is always explained.
+  const R7 = C.suggestPrescription({ weightKg: 40, hematocrit: 0.3, modality: 'CVVHD', bloodFlow_mL_min: 150,
+    targetDeliveredDose_mL_kg_hr: 20, uptimeFraction: 1, netUltrafiltration_mL_hr: 1200 });
+  check('R7: net UF above the target dose is warned',
+    R7.predictedDeliveredDose_mL_kg_hr > 22 && R7.warnings.length > 0 ? 1 : 0, 1, 0);
+
+  // R8: Tolwani citrate check. 18 mmol/L at 3 mmol/L runs at exactly 10 x Qb.
+  let r8 = 0;
+  [100, 120, 150, 180, 200, 250].forEach(qb => {
+    const f = C.citrateFlowFromTargetDose({ bloodFlow_mL_min: qb, targetCitrateDose_mmol_L: 3, citrateConcentration_mmol_L: 18 }).citrateFlow_mL_hr;
+    if (Math.abs(f - 10 * qb) > 1e-9) r8++;
+    const back = C.citrateDoseFromFlow({ citrateFlow_mL_hr: f, citrateConcentration_mmol_L: 18, bloodFlow_mL_min: qb }).actualCitrateDose_mmol_L;
+    if (Math.abs(back - 3) > 1e-9) r8++;
+  });
+  check('R8: 18 mmol/L citrate = 10 x Qb and exact round trip at six blood flows', r8, 0, 0);
 
   // --- Dosing-weight helper ---
   const L = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'male' });
@@ -248,6 +340,7 @@
   );
 
   // --- Render ---
+  function renderResults() {
   const resultsEl = document.getElementById('results');
   results.forEach(r => {
     const div = document.createElement('div');
@@ -265,6 +358,54 @@
   } else {
     document.getElementById('summary').style.color = '#3FB8AF';
   }
+  }
+
+  // --- UI path tests: drive the real Prescribe page in a hidden container ---
+  async function uiTests() {
+    const [cfg, sol] = await Promise.all([
+      fetch('../config/local-protocol.json').then(r => r.json()),
+      fetch('../data/solutions.json').then(r => r.json()),
+    ]);
+    window.CRRTStore = { loadConfig: async () => cfg, loadData: async () => sol };
+    const root = document.createElement('div');
+    root.style.display = 'none';
+    document.body.appendChild(root);
+    await window.CRRTUICalculator.mount(root);
+    const $ = id => document.getElementById(id);
+    const set = (id, v) => { const n = $(id); n.value = String(v); n.dispatchEvent(new Event('input')); n.dispatchEvent(new Event('change')); };
+    const numOut = id => parseFloat($(id).textContent);
+
+    // U1: typed values are numbers, not strings (string concatenation bug).
+    root.querySelector('[data-anticoag="heparin"]').click();
+    root.querySelector('[data-modality="CVVHDF"]').click();
+    set('dialysateFlow', 1600); set('replacementPre', 300); set('replacementPost', 300); set('netUF', 100);
+    check('U1: effluent after typing = 1600 + 300 + 300 + 100', numOut('out-effluent'), 2300, 0.5);
+
+    // U2: the displayed prescription is exactly the engine's (no UI post-processing).
+    $('generatePrescription').click();
+    const pred = root.textContent.match(/Current generated prediction: ([\d.]+) mL\/kg\/hr delivered at FF ([\d.]+)%/);
+    check('U2: Step 1 prediction equals Step 3 delivered dose', pred ? Math.abs(parseFloat(pred[1]) - numOut('out-delivered')) : 99, 0, 0.05);
+
+    // U3: generator warnings reach the screen (Regiocit dose floor at 40 kg).
+    root.querySelector('[data-anticoag="citrate"]').click();
+    set('citrateProduct', 'regiocit');
+    set('actualWeightKg', 40); set('bloodFlow', 150); set('targetDeliveredDose', 25);
+    $('generatePrescription').click();
+    check('U3: citrate dose-floor warning is rendered', /citrate solution/.test(root.textContent) ? 1 : 0, 1, 0);
+
+    // U4: amber FF warning renders for a manual edit above the ceiling.
+    set('actualWeightKg', 80);
+    root.querySelector('[data-anticoag="heparin"]').click();
+    set('replacementPre', 0); set('replacementPost', 1800); set('netUF', 0);
+    check('U4: FF above ceiling shows a warning', /FF above/.test($('out-warnings').textContent) ? 1 : 0, 1, 0);
+
+    // U5: degenerate inputs never render NaN or Infinity.
+    set('actualWeightKg', 0); set('hematocrit', 1); set('bloodFlow', 0);
+    check('U5: no NaN or Infinity rendered with zero weight, Hct 1, Qb 0', /NaN|Infinity/.test(root.textContent) ? 1 : 0, 0, 0);
+    root.remove();
+  }
+
+  uiTests().catch(e => check('UI tests ran without error: ' + e.message, 0, 1, 0)).finally(renderResults);
 })();
 </script>
 </body>

@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * sw.js — service worker with version-keyed caching.
+ * sw.js: service worker with version-keyed caching.
  *
  * The cache name is derived from version.json at install time, so every
  * time you bump version.json and push, the new service worker installs
@@ -92,7 +92,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // version.json is always fetched from the network — it is the signal that
+  // version.json is always fetched from the network because it is the signal that
   // tells the app (and this service worker) whether a new version is available.
   if (url.pathname.endsWith('version.json')) {
     event.respondWith(fetch(request, { cache: 'no-store' }));

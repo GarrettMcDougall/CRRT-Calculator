@@ -11,12 +11,13 @@
 
   "circuit": {
     "bloodFlow_mL_min": { "default": 150, "typicalMin": 100, "typicalMax": 200, "reviewed": false },
-    "filtrationFractionPreferredMax": 0.20,
-    "reviewed": false
+        "reviewed": false
   },
 
   "filtrationFraction": {
-    "amberThreshold": 0.25,
+    "_note": "ceiling: the generator never exceeds this and the flag turns amber above it. ceilingWithPreFilterCitrate: used instead when a dilute (<50 mmol/L) citrate solution runs pre-filter; the FF formula already credits pre-dilution, so keep it equal to ceiling unless your protocol specifies otherwise. redThreshold: flag turns red above this.",
+    "ceiling": 0.25,
+    "ceilingWithPreFilterCitrate": 0.25,
     "redThreshold": 0.30,
     "reviewed": false
   },
