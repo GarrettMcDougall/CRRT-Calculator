@@ -18,7 +18,7 @@ window.CRRTSchematic = (function () {
    * @param {Object} [s.pressures] { access, filter, returnP, tmp } mmHg, or null
    * @param {number} [s.ffCeiling]  amber above this (default 0.25)
    * @param {number} [s.ffRedThreshold]  red above this (default 0.30)
-   * @param {Object} [s.alarm] { zone: 'access'|'filter'|'return'|'air'|'leak'|null }
+   * @param {Object} [s.alarm] { zone: 'access'|'filter'|'return'|'air'|'effluent'|null }
    */
   function render(s) {
     const {
@@ -39,7 +39,8 @@ window.CRRTSchematic = (function () {
     const safeQb = Number.isFinite(qbNum) ? qbNum : 0;
     const lineWidth = clamp(2 + safeQb / 60, 2, 8).toFixed(1);
     const redAt = Math.max(ffRedThreshold, ffCeiling);
-    const filterColor = ffNum > redAt ? 'var(--alarm)' : ffNum > ffCeiling ? 'var(--amber)' : `var(${accentVar})`;
+    const filterAlarm = alarm && alarm.zone === 'filter';
+    const filterColor = filterAlarm || ffNum > redAt ? 'var(--alarm)' : ffNum > ffCeiling ? 'var(--amber)' : `var(${accentVar})`;
 
     const zoneStroke = (zone) => (alarm && alarm.zone === zone ? 'var(--alarm)' : 'var(--hairline)');
     const zoneWidth = (zone) => (alarm && alarm.zone === zone ? 3 : 1);
@@ -78,7 +79,7 @@ window.CRRTSchematic = (function () {
   <text x="290" y="215" text-anchor="middle" class="lbl">FF ${Number.isFinite(ffNum) ? (ffNum * 100).toFixed(1) + '%' : '\u2013'}</text>
 
   <!-- Effluent line -->
-  <line x1="290" y1="200" x2="290" y2="270" stroke="${zoneStroke('effluent')}" stroke-width="2"/>
+  <line x1="290" y1="200" x2="290" y2="270" stroke="${zoneStroke('effluent')}" stroke-width="${zoneWidth('effluent') + 1}"/>
   <rect x="255" y="270" width="70" height="36" rx="6" class="box"/>
   <text x="290" y="292" text-anchor="middle" class="lbl">effluent</text>
 

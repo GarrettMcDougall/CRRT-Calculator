@@ -40,13 +40,14 @@ Before using this beyond personal study:
 3. Set `"reviewed": true` at the top level once you've done this, and update the per-section `reviewed` flags in `data/theory.json`, `data/cases.json`, `data/quiz.json`, `data/solutions.json`, and `config/local-protocol.json` as you check each one. The app surfaces an "unreviewed content" marker until you do.
 4. Re-run `tests/tests.html` in a browser after any change to `js/calc.js`. It checks dose, filtration fraction, citrate, heparin, electrolyte warnings, and guided starting-flow calculations.
 
-See `CLINICAL_REVIEW.md` for corrected errors, unresolved local protocol decisions, and the recommended next build.
+See `AUDIT_2026-09-23.md` for the audit history: what was tested, what was found, and what was fixed.
 
 ## Structure
 
 - `js/calc.js`: pure calculation functions, no DOM. This is the part that has to be right; everything else is presentation.
 - `tests/tests.html`: open directly in a browser to run the test suite and see pass/fail.
 - `config/local-protocol.json`: the file you fork and edit for your site.
+- `data/prescribing.json`: the Learn to prescribe content (builder decisions, prescribing cases, effects of changing each variable).
 - `data/solutions.json`: region- and brand-grouped dialysate, replacement, and citrate catalogue with normalized mmol/L values and verification status.
 - `data/*.json`: theory content, teaching cases, quiz bank, troubleshooting scenarios.
 

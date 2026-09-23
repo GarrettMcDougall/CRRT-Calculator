@@ -76,7 +76,9 @@
         await window.CRRTUITheory.mount(viewRoot, parts[1]);
       } else if (parts[0] === 'learn') {
         if (!parts[1]) await window.CRRTUITeaching.mountHub(viewRoot);
-        else if (parts[1] === 'builder') await window.CRRTUITeaching.mountBuilder(viewRoot);
+        else if (parts[1] === 'builder') await window.CRRTUIPrescribing.mountBuilder(viewRoot);
+        else if (parts[1] === 'prescribing' && parts[2]) await window.CRRTUIPrescribing.mountCase(viewRoot, parts[2]);
+        else if (parts[1] === 'prescribing') await window.CRRTUIPrescribing.mountCasesList(viewRoot);
         else if (parts[1] === 'cases') await window.CRRTUITeaching.mountCasesList(viewRoot);
         else if (parts[1] === 'case' && parts[2]) await window.CRRTUITeaching.mountCase(viewRoot, parts[2]);
         else if (parts[1] === 'troubleshoot') await window.CRRTUITeaching.mountTroubleshoot(viewRoot);
@@ -92,7 +94,8 @@
       viewRoot.innerHTML = `<div class="card"><h2>Something went wrong loading this view</h2><div class="warning-inline hard">${err.message}</div></div>`;
     }
 
-    window.scrollTo(0, 0);
+    // A theory deep link scrolls to its section; everything else starts at the top.
+    if (!(parts[0] === 'theory' && parts[1])) window.scrollTo(0, 0);
   }
 
   async function renderVersionTag() {

@@ -298,6 +298,44 @@ details.working {
 details.working summary { cursor: pointer; color: var(--citrate); font-weight: 600; }
 details.working .formula { font-family: var(--font-mono); background: var(--ground); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); margin-top: var(--sp-2); white-space: pre-wrap; }
 
+.rx-summary {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  background: var(--ground);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3);
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+  -webkit-user-select: text;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+/* ---------- Learn to prescribe ---------- */
+.teach-box { border-left: 3px solid var(--citrate); background: var(--panel-raised); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); margin-top: var(--sp-3); }
+.teach-box h3 { margin-top: 0; }
+.formula-box { font-family: var(--font-mono); font-size: var(--fs-small); background: var(--ground); border: 1px solid var(--hairline); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); margin-top: var(--sp-2); white-space: pre-wrap; word-break: break-word; }
+.formula-box.worked { border-color: var(--citrate); }
+.rx-ok { color: var(--green); margin-top: var(--sp-1); }
+.rx-bad { color: var(--alarm); margin-top: var(--sp-1); }
+.rx-nav { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.effects-table { display: grid; grid-template-columns: 6.5rem repeat(3, 1fr); gap: var(--sp-2); font-size: var(--fs-small); margin-top: var(--sp-2); }
+.effects-table .eh { font-weight: 600; color: var(--muted); }
+.effects-table .er { font-weight: 600; }
+.effects-table .elabel { display: none; font-weight: 600; color: var(--muted); }
+@media (max-width: 700px) {
+  .effects-table { grid-template-columns: 1fr; }
+  .effects-table .eh { display: none; }
+  .effects-table .elabel { display: inline; }
+  .effects-table .er { margin-top: var(--sp-2); border-top: 1px solid var(--hairline); padding-top: var(--sp-2); }
+}
+.explore-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) 0; border-bottom: 1px dashed var(--hairline); }
+.explore-label { flex: 1; }
+.explore-val { font-family: var(--font-mono); font-weight: 600; min-width: 7.5rem; text-align: center; }
+.explore-btn { min-width: 2.5rem; padding: var(--sp-1) var(--sp-2); }
+
 /* ---------- Circuit schematic ---------- */
 .schematic-wrap { position: sticky; top: 4.5rem; }
 .schematic-wrap svg { width: 100%; height: auto; }

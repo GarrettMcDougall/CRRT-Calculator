@@ -74,7 +74,7 @@
     "id": "air-detected",
     "alarm": "Air / bubble detector alarm",
     "pressurePattern": { "access": "variable", "filter": "variable", "return": "variable", "TMP": "variable" },
-    "localises": "Air has entered the circuit, most commonly pre-pump on the access side (a loose connection or an empty priming bag) or via a cracked line.",
+    "localises": "Air has entered the circuit, most commonly pre-pump on the access side (a loose connection, or an empty pre-blood-pump citrate or replacement bag) or via a cracked line.",
     "differential": [
       "Loose or disconnected line connection",
       "Empty bag upstream of the pump generating negative-pressure air entrainment",
@@ -130,7 +130,7 @@
       "A 25 mL/kg/hr prescription at 91.7% uptime delivers roughly 23 mL/kg/hr, before any other loss"
     ],
     "firstActions": [
-      "Prescribe above target (25–30 mL/kg/hr) to absorb expected downtime and still land at 20–25 delivered",
+      "Calculate the prescribed rate from expected uptime and pre-dilution so the delivered dose lands at 20–25 mL/kg/hr (the Prescribe tab does this), rather than using a fixed 25–30 rule",
       "Track uptime, not just the prescribed number, when reviewing whether dose targets are being met"
     ],
     "reviewed": false

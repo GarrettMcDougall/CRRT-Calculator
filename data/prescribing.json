@@ -1,0 +1,366 @@
+{
+  "_readme": "Learn to prescribe: guided builder decisions, prescribing cases, and the effect of changing each variable. Verdicts: best, ok, avoid. An 'avoid' choice shows its feedback and asks the learner to choose again. 'set' changes the working prescription; 'order' is the line added to the order sheet. 'when' limits an option or step to a state (anticoag, citrateDilute, modality). All values are generic teaching values, not a local protocol.",
+  "reviewed": false,
+
+  "effects": {
+    "bloodFlow": {
+      "label": "Blood flow (Qb)",
+      "typical": "150–200 mL/min is common in adults. Dilute pre-filter citrate protocols often use 100–150 mL/min because the citrate volume rises with Qb. Above 250 mL/min depends on the access.",
+      "up": {
+        "both": "Plasma flow rises, so filtration fraction falls and the filter lasts longer. Small-solute clearance barely changes, because in CRRT clearance is limited by effluent flow, not blood flow. Access pressure becomes more negative and return pressure rises.",
+        "citrate": "Citrate flow rises in proportion, because the citrate dose is set per litre of blood. Systemic citrate load and calcium losses rise. With a dilute citrate solution the extra volume also adds to effluent and pre-dilution, raising the delivered dose.",
+        "heparin": "No change to heparin dosing. A higher Qb is one of the main tools for extending filter life, particularly with no anticoagulation."
+      },
+      "down": {
+        "both": "Filtration fraction rises and the filter tends to clot sooner. Useful when the access cannot sustain a higher flow.",
+        "citrate": "Citrate flow and citrate load fall. Lowering Qb is the main way to reduce the dose that a dilute citrate solution delivers on its own in a small patient.",
+        "heparin": "Filtration fraction rises. Compensate by giving more replacement pre-filter or more of the dose as dialysate."
+      }
+    },
+    "dialysate": {
+      "label": "Dialysate (Qd)",
+      "typical": "Often 1000–2000 mL/hr in CVVHDF, sized from the effluent target.",
+      "up": {
+        "both": "Effluent and small-solute dose rise with no effect on filtration fraction, because dialysate runs on the other side of the membrane and is not ultrafiltered from the blood. Losses of potassium, phosphate, magnesium and drugs rise.",
+        "citrate": "More citrate-calcium complex is cleared into the effluent. Systemic citrate load falls (less alkalosis and accumulation risk), but calcium losses rise, so the calcium infusion may need to increase.",
+        "heparin": "Only the dose and electrolyte effects above."
+      },
+      "down": {
+        "both": "Dose falls unless replaced by another component of effluent.",
+        "citrate": "Less citrate is cleared, so more reaches the patient. Watch for alkalosis and a rising total-to-ionised calcium ratio.",
+        "heparin": "Only the dose and electrolyte effects above."
+      }
+    },
+    "pre": {
+      "label": "Pre-filter replacement",
+      "typical": "Heparin or no anticoagulation: often about half of the replacement. Citrate: the citrate solution already dilutes the blood before the filter, so protocols usually give most replacement post-filter (this app uses 20% pre-filter).",
+      "up": {
+        "both": "Adds convective clearance, but dilutes the blood before the membrane, so each mL clears less than the same mL given post-filter. Compared with giving that volume post-filter, filtration fraction and haemoconcentration are lower and the filter lasts longer.",
+        "citrate": "Adds to the pre-filter dilution the citrate solution already provides. Most citrate protocols keep it modest.",
+        "heparin": "A key filter-life tool, especially with no anticoagulation or repeated clotting."
+      },
+      "down": {
+        "both": "Each mL of effluent clears more, but moving that volume post-filter raises filtration fraction.",
+        "citrate": "Little effect on the citrate itself.",
+        "heparin": "Filter life may shorten if FF rises."
+      }
+    },
+    "post": {
+      "label": "Post-filter replacement",
+      "typical": "Sized so that filtration fraction stays under the protocol ceiling (25% in this app).",
+      "up": {
+        "both": "The most efficient convective clearance per mL, but it raises filtration fraction directly: blood leaving the filter becomes more concentrated and the filter clots sooner.",
+        "citrate": "The main replacement route with citrate. Standard citrate protocols use calcium-free fluids and replace calcium separately.",
+        "heparin": "Watch FF closely. Move some volume pre-filter or into dialysate if FF approaches the ceiling."
+      },
+      "down": {
+        "both": "Filtration fraction falls. Dose falls unless the volume is given as dialysate or pre-filter replacement.",
+        "citrate": "No direct citrate effect.",
+        "heparin": "No direct heparin effect."
+      }
+    },
+    "netUF": {
+      "label": "Net ultrafiltration",
+      "typical": "0–100 mL/hr when haemodynamics are fragile. When tolerated, many units aim for roughly 1–1.5 mL/kg/hr. Rates above about 1.75 mL/kg/hr have been associated with worse outcomes.",
+      "up": {
+        "both": "More fluid is removed. It counts toward effluent (dose) and filtration fraction. Removal faster than plasma refill causes hypotension.",
+        "citrate": "No direct citrate effect.",
+        "heparin": "No direct heparin effect."
+      },
+      "down": {
+        "both": "Less fluid is removed and filtration fraction falls slightly.",
+        "citrate": "No direct citrate effect.",
+        "heparin": "No direct heparin effect."
+      }
+    },
+    "citrateDose": {
+      "label": "Citrate dose",
+      "typical": "3–4 mmol per litre of blood, titrated to a post-filter ionised calcium of about 0.25–0.35 mmol/L using the local nomogram.",
+      "up": {
+        "both": "",
+        "citrate": "Post-filter ionised calcium falls (stronger circuit anticoagulation). Citrate flow, systemic citrate load and calcium losses rise. With a dilute solution the extra volume also raises effluent and pre-dilution.",
+        "heparin": ""
+      },
+      "down": {
+        "both": "",
+        "citrate": "Post-filter ionised calcium rises and the filter may clot sooner. Citrate load falls.",
+        "heparin": ""
+      }
+    }
+  },
+
+  "builder": {
+    "title": "Guided prescription builder",
+    "patient": {
+      "weightKg": 70, "heightCm": 175, "sex": "male", "hematocrit": 0.30,
+      "defaults": { "modality": "CVVHDF", "anticoag": "citrate", "citrateConc": 18, "bloodFlow": 150, "netUF": 0, "target": 25, "uptime": 0.9, "weightBasis": "actual" }
+    },
+    "stem": "A 64-year-old man, 70 kg and 175 cm, has septic shock from pneumonia on norepinephrine 0.2 mcg/kg/min. He has been oliguric for 12 hours. Potassium is 6.5 mmol/L despite insulin-dextrose and calcium; pH 7.16, bicarbonate 12 mmol/L. He is about 6 L positive. No liver disease. Platelets 150, INR 1.3, no bleeding. Haematocrit 0.30.",
+    "decisions": [
+      {
+        "key": "indication", "title": "Is CRRT indicated now?", "theoryLink": "timing",
+        "teach": "The timing trials (AKIKI, IDEAL-ICU, STARRT-AKI) showed no benefit from starting on AKI stage alone. Start when there is a trigger: refractory hyperkalaemia, severe acidosis, diuretic-refractory fluid overload, uraemic complications or a dialysable poison. AKIKI 2 also showed that waiting beyond clear triggers offers no benefit.",
+        "options": [
+          { "label": "Start now: refractory hyperkalaemia and severe metabolic acidosis are triggers", "verdict": "best", "order": "Indication: refractory hyperkalaemia and metabolic acidosis", "feedback": "Correct. Both are accepted triggers that have not responded to medical therapy." },
+          { "label": "Wait until creatinine rises further", "verdict": "avoid", "feedback": "Creatinine is not the trigger here. Potassium of 6.5 with a pH of 7.16 despite treatment needs renal replacement now." },
+          { "label": "Start because he is KDIGO stage 3", "verdict": "ok", "order": "Indication: stage 3 AKI", "feedback": "The decision is right but the reason is not. Stage alone is not an indication; the triggers are. Document the trigger." }
+        ]
+      },
+      {
+        "key": "rrtType", "title": "CRRT, intermittent HD, or a hybrid (PIRRT/SLED)?", "theoryLink": "modality",
+        "teach": "Outcomes are similar across RRT types. KDIGO suggests CRRT for haemodynamically unstable patients and those with raised intracranial pressure, because slow continuous removal of fluid and solute is better tolerated. Intermittent HD lowers potassium fastest.",
+        "options": [
+          { "label": "CRRT", "verdict": "best", "order": "RRT type: CRRT", "feedback": "Correct. He depends on norepinephrine, so continuous therapy is best tolerated." },
+          { "label": "Intermittent haemodialysis", "verdict": "ok", "feedback": "Intermittent HD clears potassium fastest and can be used for a life-threatening level, but on vasopressors it risks intradialytic hypotension. If you choose it for the potassium, plan to move to CRRT." },
+          { "label": "PIRRT / SLED", "verdict": "ok", "order": "RRT type: PIRRT", "feedback": "A reasonable alternative where CRRT is limited, with slower removal than intermittent HD. This walkthrough continues with CRRT." }
+        ],
+        "forceSet": { "rrt": "CRRT" }
+      },
+      {
+        "key": "access", "title": "Vascular access", "theoryLink": "circuit",
+        "teach": "KDIGO's order of preference is right internal jugular, then femoral, then left internal jugular, then subclavian on the dominant side last (subclavian lines risk stenosis that later rules out a fistula). Use ultrasound guidance. Choose the catheter length so the tip lies in the right atrium or at the cavo-atrial junction (commonly about 15 cm on the right IJ, 20 cm on the left IJ and 20–25 cm femoral). A tip that is too short causes recirculation.",
+        "options": [
+          { "label": "Right internal jugular, ultrasound-guided", "verdict": "best", "order": "Access: right IJ dialysis catheter, ultrasound-guided, tip position confirmed", "feedback": "Correct. The shortest, straightest path with the most reliable flow." },
+          { "label": "Femoral", "verdict": "ok", "order": "Access: femoral dialysis catheter, 20–25 cm", "feedback": "Acceptable and often quickest. Use a long enough catheter to reach the IVC, and expect flow problems with hip flexion." },
+          { "label": "Left subclavian", "verdict": "avoid", "feedback": "Subclavian access is last choice: it has the highest risk of central venous stenosis and harder flow." }
+        ]
+      },
+      {
+        "key": "modality", "title": "Which CRRT modality?", "theoryLink": "modality",
+        "teach": "CVVH clears by convection (replacement fluid), CVVHD by diffusion (dialysate), and CVVHDF combines both. No trial shows a mortality difference between them. CVVHDF is a common default because the dialysate component delivers dose without raising filtration fraction. SCUF removes fluid only.",
+        "options": [
+          { "label": "CVVHDF", "verdict": "best", "set": { "modality": "CVVHDF" }, "order": "Modality: CVVHDF", "feedback": "Good default. Splitting the dose between dialysate and replacement keeps filtration fraction manageable." },
+          { "label": "CVVHD", "verdict": "ok", "set": { "modality": "CVVHD" }, "order": "Modality: CVVHD", "feedback": "Reasonable. Pure diffusion is kind to the filter; middle-molecule clearance is lower, which has not been shown to matter for outcomes." },
+          { "label": "CVVH", "verdict": "ok", "set": { "modality": "CVVH" }, "order": "Modality: CVVH", "feedback": "Reasonable, but the whole dose must cross the membrane as ultrafiltrate, so filtration fraction limits how much you can give. Watch the FF step." },
+          { "label": "SCUF", "verdict": "avoid", "feedback": "SCUF removes fluid only. It will not treat hyperkalaemia or acidosis." }
+        ]
+      },
+      {
+        "key": "anticoag", "title": "Anticoagulation", "theoryLink": "anticoagulation",
+        "teach": "KDIGO suggests anticoagulation when there is no increased bleeding risk, and suggests regional citrate over heparin when citrate is not contraindicated. Citrate lasts longer per filter and causes less bleeding. Main cautions for citrate: severe liver failure or shock with poor lactate clearance (accumulation risk). Heparin is reasonable when citrate is unavailable or contraindicated, or when the patient already needs systemic anticoagulation.",
+        "options": [
+          { "label": "Regional citrate", "verdict": "best", "set": { "anticoag": "citrate" }, "order": "Anticoagulation: regional citrate", "feedback": "Correct. No liver failure, no contraindication, and his lactate is clearing." },
+          { "label": "Systemic unfractionated heparin", "verdict": "ok", "set": { "anticoag": "heparin" }, "order": "Anticoagulation: systemic heparin", "feedback": "Reasonable if citrate is unavailable. It anticoagulates the patient as well as the circuit." },
+          { "label": "No anticoagulation", "verdict": "avoid", "feedback": "He has no bleeding risk. Without anticoagulation the filter will clot often, and each clot loses treatment time and blood." }
+        ]
+      },
+      {
+        "key": "citrateProduct", "title": "Which citrate solution?", "theoryLink": "citrate", "when": { "anticoag": ["citrate"] },
+        "teach": "Dilute citrate solutions (for example Regiocit or Prismocitrate, 18 mmol/L) run at about 10 times the blood flow in mL/hr and double as pre-filter replacement fluid. Concentrated solutions (ACD-A 113 mmol/L, 4% trisodium citrate 136 mmol/L) run at small volumes. ACD-A contains dextrose; 4% trisodium citrate carries a large sodium load. Use the product your unit stocks and the matching protocol.",
+        "options": [
+          { "label": "Dilute: Regiocit 18 mmol/L", "verdict": "best", "set": { "citrateConc": 18 }, "order": "Citrate: Regiocit 18 mmol/L pre-filter", "feedback": "Good choice if stocked. Remember its volume counts toward effluent, pre-dilution and filtration fraction." },
+          { "label": "Concentrated: ACD-A 113 mmol/L", "verdict": "best", "set": { "citrateConc": 113 }, "order": "Citrate: ACD-A 113 mmol/L pre-filter", "feedback": "Good choice if stocked. Small volume, so it barely affects dose or FF." }
+        ]
+      },
+      {
+        "key": "target", "title": "Dose target", "theoryLink": "dose",
+        "teach": "Dose is expressed as effluent volume per kg per hour. RENAL (40 vs 25) and ATN (35 vs 20) showed no benefit from higher intensity. KDIGO recommends 20–25 mL/kg/hr delivered. Because of downtime and pre-dilution, the prescribed effluent must be higher than the delivered target.",
+        "options": [
+          { "label": "25 mL/kg/hr delivered", "verdict": "best", "set": { "target": 25 }, "order": "Dose: 25 mL/kg/hr delivered", "feedback": "Correct: the upper end of the KDIGO range." },
+          { "label": "20 mL/kg/hr delivered", "verdict": "ok", "set": { "target": 20 }, "order": "Dose: 20 mL/kg/hr delivered", "feedback": "Within the KDIGO range. With his potassium and acidosis many would aim for the upper end at the start." },
+          { "label": "35–40 mL/kg/hr delivered", "verdict": "avoid", "feedback": "RENAL and ATN showed no benefit and more hypophosphataemia with higher intensity." }
+        ]
+      },
+      {
+        "key": "uptime", "title": "Expected downtime", "theoryLink": "dose",
+        "teach": "Filter changes, clotting, imaging and procedures stop treatment. A typical ICU loses about 10% of each day. Use your unit's observed downtime if you know it.",
+        "options": [
+          { "label": "10% (about 2.4 hours a day)", "verdict": "best", "set": { "uptime": 0.9 }, "order": "Expected downtime: 10%", "feedback": "A sensible default." },
+          { "label": "0%: the machine runs continuously", "verdict": "avoid", "feedback": "Downtime always happens. Assuming none guarantees underdosing." },
+          { "label": "20%: frequent clotting and trips expected", "verdict": "ok", "set": { "uptime": 0.8 }, "order": "Expected downtime: 20%", "feedback": "Reasonable if your unit's data show this. Fixing the cause of the downtime is better than prescribing around it." }
+        ]
+      },
+      {
+        "key": "bloodFlow", "title": "Blood flow (Qb)", "theoryLink": "circuit", "effect": "bloodFlow",
+        "teach": "Blood flow sets plasma flow, which limits how much fluid can cross the membrane (filtration fraction). It barely changes small-solute clearance in CRRT. With citrate it also sets the citrate flow, because citrate is dosed per litre of blood.",
+        "options": [
+          { "label": "120 mL/min", "verdict": "best", "when": { "anticoag": ["citrate"], "citrateDilute": true }, "set": { "bloodFlow": 120 }, "order": "Qb: 120 mL/min", "feedback": "Good for a dilute citrate solution: citrate runs at about 1200 mL/hr, leaving room for dialysate and replacement." },
+          { "label": "150 mL/min", "verdict": "ok", "when": { "anticoag": ["citrate"], "citrateDilute": true }, "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "Acceptable. Citrate alone runs at 1500 mL/hr, most of his effluent target, so FF will be close to the ceiling." },
+          { "label": "200 mL/min", "verdict": "avoid", "when": { "anticoag": ["citrate"], "citrateDilute": true }, "feedback": "At 200 mL/min a dilute citrate solution runs at 2000 mL/hr, which alone exceeds his effluent target. Choose a lower Qb." },
+          { "label": "150 mL/min", "verdict": "best", "when": { "anticoag": ["citrate"], "citrateDilute": false }, "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "A standard starting flow with concentrated citrate." },
+          { "label": "200 mL/min", "verdict": "ok", "when": { "anticoag": ["citrate"], "citrateDilute": false }, "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Fine if the access allows. Citrate flow and calcium needs rise with Qb." },
+          { "label": "100 mL/min", "verdict": "avoid", "when": { "anticoag": ["citrate"], "citrateDilute": false }, "feedback": "Too low for this dose: filtration fraction will be high and the filter will clot." },
+          { "label": "200 mL/min", "verdict": "best", "when": { "anticoag": ["heparin", "none"] }, "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Good. Higher Qb lowers filtration fraction and extends filter life." },
+          { "label": "150 mL/min", "verdict": "ok", "when": { "anticoag": ["heparin", "none"] }, "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "Acceptable. Check FF, especially in CVVH." },
+          { "label": "100 mL/min", "verdict": "avoid", "when": { "anticoag": ["heparin", "none"] }, "feedback": "Too low: filtration fraction will be high and the filter will clot." }
+        ]
+      },
+      {
+        "key": "netUF", "title": "Net ultrafiltration (fluid removal)", "theoryLink": "fluid", "effect": "netUF",
+        "teach": "Net UF is what leaves the patient. Set it from the fluid goal and what the circulation tolerates now, and reassess every few hours. He is 6 L positive but still on escalating norepinephrine.",
+        "options": [
+          { "label": "0 mL/hr (even balance) for now", "verdict": "best", "set": { "netUF": 0 }, "order": "Net UF: 0 mL/hr, reassess 4-hourly", "feedback": "Correct while vasopressor needs are rising. Start removing once he stabilises." },
+          { "label": "50–100 mL/hr", "verdict": "ok", "set": { "netUF": 50 }, "order": "Net UF: 50 mL/hr, stop if hypotensive", "feedback": "Reasonable if he is stabilising, with a clear hold parameter." },
+          { "label": "250 mL/hr", "verdict": "avoid", "feedback": "About 3.6 mL/kg/hr in a patient on escalating vasopressors: likely to outpace plasma refill and cause hypotension." }
+        ]
+      },
+      {
+        "key": "solutions", "title": "Solutions", "theoryLink": "complications",
+        "teach": "Choose potassium, phosphate, calcium and buffer content deliberately. With citrate, dialysate and replacement are normally calcium-free and calcium is replaced by a separate infusion. Phosphate falls within 24–48 hours on phosphate-free fluids.",
+        "options": [
+          { "label": "Potassium 0–2 mmol/L fluids for the first hours with potassium checks every 2–4 hours, then potassium 4", "verdict": "best", "order": "Solutions: K 0–2 initially, K checks 2–4-hourly, switch to K 4 when K < 5; phosphate plan from 24 h", "feedback": "Correct. Plan the switch before potassium overshoots low." },
+          { "label": "Potassium 4 fluids from the start", "verdict": "ok", "order": "Solutions: K 4 fluids", "feedback": "Safe but slower to correct a potassium of 6.5. Some units do this and rely on the volume of effluent." },
+          { "label": "Potassium 0 fluids for the whole run", "verdict": "avoid", "feedback": "Continuous potassium-free fluid causes hypokalaemia and arrhythmia risk once the level normalises." }
+        ]
+      }
+    ],
+    "monitoring": [
+      "Electrolytes (Na, K, iCa, Mg, PO4) and a blood gas 6-hourly for the first day, then per protocol.",
+      "Citrate: post-filter iCa 1 hour after start and after each change, systemic iCa and total calcium to follow the ratio.",
+      "Heparin: aPTT or anti-Xa per the local nomogram; platelets daily for HIT.",
+      "Hourly fluid balance with a hold parameter for hypotension.",
+      "Check the delivered dose daily from the machine's effluent volume.",
+      "Review drug doses against a CRRT-specific reference."
+    ]
+  },
+
+  "cases": [
+    {
+      "id": "rx-1-septic-citrate",
+      "title": "Septic shock: first start with regional citrate",
+      "tag": "citrate",
+      "patient": { "weightKg": 85, "heightCm": 168, "sex": "female", "hematocrit": 0.28,
+        "defaults": { "modality": "CVVHDF", "anticoag": "citrate", "citrateConc": 18, "bloodFlow": 150, "netUF": 0, "target": 25, "uptime": 0.9, "weightBasis": "actual" } },
+      "stem": "A 58-year-old woman, 85 kg and 168 cm, with septic shock from cholangitis after source control. Norepinephrine 0.12 mcg/kg/min and falling. Anuric, potassium 6.2 mmol/L, pH 7.19. Bilirubin 60 µmol/L, INR 1.4, lactate 2.8 and clearing. Platelets 110. Your unit uses Regiocit.",
+      "decisions": [
+        { "key": "anticoag", "title": "Anticoagulation", "theoryLink": "anticoagulation",
+          "teach": "Mild cholestasis with a clearing lactate is not a contraindication to citrate. The concern is severe liver failure or shock with rising lactate.",
+          "options": [
+            { "label": "Regional citrate with standard monitoring", "verdict": "best", "set": { "anticoag": "citrate" }, "order": "Anticoagulation: regional citrate (Regiocit)", "feedback": "Correct. Monitor the calcium ratio, since her liver function is not perfect." },
+            { "label": "Systemic heparin because the bilirubin is raised", "verdict": "ok", "set": { "anticoag": "heparin" }, "order": "Anticoagulation: systemic heparin", "feedback": "Not wrong, but a bilirubin of 60 with a clearing lactate does not rule out citrate. You give up citrate's longer filter life and lower bleeding risk." },
+            { "label": "No anticoagulation", "verdict": "avoid", "feedback": "There is no bleeding problem, so this only shortens filter life." }
+          ] },
+        { "key": "bloodFlow", "title": "Blood flow", "theoryLink": "circuit", "effect": "bloodFlow",
+          "teach": "With Regiocit, citrate flow is about 10 × Qb in mL/hr. Her effluent target is roughly 25 × 85 / 0.9 ≈ 2400 mL/hr before pre-dilution.",
+          "options": [
+            { "label": "150 mL/min", "verdict": "best", "when": { "anticoag": ["citrate"] }, "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "Good. Citrate runs at 1500 mL/hr, leaving room for dialysate and replacement." },
+            { "label": "200 mL/min", "verdict": "ok", "when": { "anticoag": ["citrate"] }, "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Possible, but citrate would run at 2000 mL/hr: most of her effluent, a larger citrate load and more calcium replacement." },
+            { "label": "100 mL/min", "verdict": "ok", "when": { "anticoag": ["citrate"] }, "set": { "bloodFlow": 100 }, "order": "Qb: 100 mL/min", "feedback": "Possible, but low plasma flow pushes filtration fraction up in an 85 kg patient." },
+            { "label": "200 mL/min", "verdict": "best", "when": { "anticoag": ["heparin", "none"] }, "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Good for filter life with heparin." },
+            { "label": "150 mL/min", "verdict": "ok", "when": { "anticoag": ["heparin", "none"] }, "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "Acceptable; check FF." }
+          ] },
+        { "key": "netUF", "title": "Net UF", "theoryLink": "fluid", "effect": "netUF",
+          "teach": "Norepinephrine is falling and she is 4 L positive.",
+          "options": [
+            { "label": "0 mL/hr for 6 hours, then reassess", "verdict": "best", "set": { "netUF": 0 }, "order": "Net UF: 0 mL/hr, reassess at 6 h", "feedback": "Reasonable while she is still on vasopressors." },
+            { "label": "50 mL/hr with a hold if MAP < 65", "verdict": "ok", "set": { "netUF": 50 }, "order": "Net UF: 50 mL/hr, hold if MAP < 65", "feedback": "Also reasonable as she is improving." },
+            { "label": "200 mL/hr", "verdict": "avoid", "feedback": "Too fast while still on norepinephrine." }
+          ] }
+      ],
+      "debrief": "A standard citrate start. The key numbers: citrate at about 10 × Qb, a downtime-adjusted effluent target, a pre-dilution correction that is large with a dilute citrate solution, and a filtration fraction that the citrate volume itself pushes up. Moving replacement into dialysate brings FF down without changing the dose."
+    },
+    {
+      "id": "rx-2-heparin-pe",
+      "title": "Already on heparin: massive PE with AKI",
+      "tag": "heparin",
+      "patient": { "weightKg": 95, "heightCm": 180, "sex": "male", "hematocrit": 0.36,
+        "defaults": { "modality": "CVVHDF", "anticoag": "heparin", "citrateConc": 18, "bloodFlow": 200, "netUF": 100, "target": 25, "uptime": 0.9, "weightBasis": "actual" } },
+      "stem": "A 71-year-old man, 95 kg, three days after a massive pulmonary embolism, on a therapeutic unfractionated heparin infusion. Oliguric AKI with worsening pulmonary oedema despite furosemide; blood pressure is stable off vasopressors. Potassium 5.4, pH 7.29. Haematocrit 0.36.",
+      "decisions": [
+        { "key": "anticoag", "title": "Anticoagulation for the circuit", "theoryLink": "anticoagulation",
+          "teach": "KDIGO does not suggest extra anticoagulation for the circuit when a patient is already systemically anticoagulated.",
+          "options": [
+            { "label": "Use the existing therapeutic heparin; no separate circuit anticoagulation", "verdict": "best", "set": { "anticoag": "heparin" }, "order": "Anticoagulation: existing therapeutic heparin infusion (target per PE nomogram)", "feedback": "Correct. His heparin already protects the circuit." },
+            { "label": "Add regional citrate as well", "verdict": "avoid", "feedback": "Unnecessary: it adds citrate and calcium complexity without benefit while he is therapeutically heparinised." }
+          ] },
+        { "key": "modality", "title": "Modality", "theoryLink": "modality",
+          "teach": "His haematocrit is high (0.36), so plasma flow is lower for any blood flow and filtration fraction rises.",
+          "options": [
+            { "label": "CVVHDF", "verdict": "best", "set": { "modality": "CVVHDF" }, "order": "Modality: CVVHDF", "feedback": "Good. Dialysate carries part of the dose without adding to FF." },
+            { "label": "CVVH", "verdict": "ok", "set": { "modality": "CVVH" }, "order": "Modality: CVVH", "feedback": "Possible, but with a haematocrit of 0.36 and 95 kg, watch the FF step closely." },
+            { "label": "SCUF", "verdict": "avoid", "feedback": "He needs solute clearance as well as fluid removal." }
+          ] },
+        { "key": "bloodFlow", "title": "Blood flow", "theoryLink": "circuit", "effect": "bloodFlow",
+          "teach": "With heparin, Qb is chosen for filter life and access tolerance.",
+          "options": [
+            { "label": "200 mL/min", "verdict": "best", "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Good for a large patient with a high haematocrit." },
+            { "label": "150 mL/min", "verdict": "ok", "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "Acceptable, but FF will be higher." },
+            { "label": "100 mL/min", "verdict": "avoid", "feedback": "Too low for his size and haematocrit." }
+          ] },
+        { "key": "netUF", "title": "Net UF", "theoryLink": "fluid", "effect": "netUF",
+          "teach": "He is haemodynamically stable with pulmonary oedema. 1 mL/kg/hr is about 95 mL/hr.",
+          "options": [
+            { "label": "100–150 mL/hr (about 1–1.5 mL/kg/hr) with a MAP hold", "verdict": "best", "set": { "netUF": 120 }, "order": "Net UF: 120 mL/hr, hold if MAP < 65", "feedback": "Correct. Meaningful removal at a rate most patients tolerate." },
+            { "label": "0 mL/hr", "verdict": "ok", "set": { "netUF": 0 }, "order": "Net UF: 0 mL/hr", "feedback": "Safe, but fluid removal is one of the reasons for starting." },
+            { "label": "300 mL/hr", "verdict": "avoid", "feedback": "About 3 mL/kg/hr: above the range associated with harm and likely to outpace refill." }
+          ] }
+      ],
+      "debrief": "With heparin there is no citrate volume, so pre-dilution comes only from pre-filter replacement (50% here). Net UF adds directly to effluent and filtration fraction. The high haematocrit is why a higher Qb and a dialysate component matter."
+    },
+    {
+      "id": "rx-3-obesity",
+      "title": "BMI 49: which weight, and how much effluent?",
+      "tag": "citrate",
+      "patient": { "weightKg": 150, "heightCm": 175, "sex": "male", "hematocrit": 0.32,
+        "defaults": { "modality": "CVVHDF", "anticoag": "citrate", "citrateConc": 113, "bloodFlow": 200, "netUF": 0, "target": 25, "uptime": 0.9, "weightBasis": "actual" } },
+      "stem": "A 49-year-old man, 150 kg and 175 cm (BMI 49), with septic AKI, potassium 6.1 and fluid overload. Off vasopressors. Your unit uses ACD-A for regional citrate. Haematocrit 0.32.",
+      "decisions": [
+        { "key": "weightBasis", "title": "Which weight for the dose?", "theoryLink": "dose",
+          "teach": "The dose trials enrolled few very obese patients and there is no validated rule. Dosing on actual weight can mean very large effluent volumes; ideal weight underestimates the clearance a large patient needs. Adjusted body weight (ideal weight plus 40% of the excess) is a common compromise. Check the delivered effect with potassium, acid-base and urea.",
+          "options": [
+            { "label": "Adjusted body weight", "verdict": "best", "set": { "weightBasis": "adjusted" }, "order": "Dosing weight: adjusted body weight", "feedback": "A reasonable compromise. Reassess with labs and switch if clearance is inadequate." },
+            { "label": "Actual weight (150 kg)", "verdict": "ok", "set": { "weightBasis": "actual" }, "order": "Dosing weight: actual (150 kg)", "feedback": "Defensible, but the effluent needed is over 4 L/hr, which strains fluid supply and filtration fraction." },
+            { "label": "Ideal body weight", "verdict": "avoid", "feedback": "Ideal weight ignores the real volume of distribution of urea and potassium and is likely to underdose." }
+          ] },
+        { "key": "bloodFlow", "title": "Blood flow", "theoryLink": "circuit", "effect": "bloodFlow",
+          "teach": "Large effluent volumes need plasma flow to keep FF below the ceiling. ACD-A runs at about 1.6 × Qb in mL/hr at 3 mmol/L.",
+          "options": [
+            { "label": "200 mL/min", "verdict": "best", "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Good, if the catheter supports it." },
+            { "label": "250 mL/min", "verdict": "ok", "set": { "bloodFlow": 250 }, "order": "Qb: 250 mL/min", "feedback": "Possible with good access; more citrate and calcium." },
+            { "label": "120 mL/min", "verdict": "avoid", "feedback": "Too little plasma flow for a large effluent target." }
+          ] }
+      ],
+      "debrief": "In obesity the weight choice changes the effluent by more than any other decision. Whatever you choose, write down the weight used, then judge adequacy from potassium, acid-base and urea over the first 24 hours."
+    },
+    {
+      "id": "rx-4-small-regiocit",
+      "title": "40 kg on Regiocit: when the citrate is the dose",
+      "tag": "citrate",
+      "patient": { "weightKg": 40, "heightCm": 150, "sex": "female", "hematocrit": 0.25,
+        "defaults": { "modality": "CVVHDF", "anticoag": "citrate", "citrateConc": 18, "bloodFlow": 150, "netUF": 0, "target": 22.5, "uptime": 0.9, "weightBasis": "actual" } },
+      "stem": "An 82-year-old woman, 40 kg and 150 cm, with AKI after a complicated colectomy, potassium 6.0 and pH 7.22. Stable off vasopressors. Your unit uses Regiocit. You are aiming for 22.5 mL/kg/hr delivered. Haematocrit 0.25.",
+      "decisions": [
+        { "key": "bloodFlow", "title": "Blood flow", "theoryLink": "citrate", "effect": "bloodFlow",
+          "teach": "Her effluent target is only about 22.5 × 40 / 0.9 = 1000 mL/hr before pre-dilution. Regiocit runs at about 10 × Qb.",
+          "options": [
+            { "label": "100 mL/min", "verdict": "best", "set": { "bloodFlow": 100 }, "order": "Qb: 100 mL/min", "feedback": "Correct. Citrate runs at about 1000 mL/hr, close to her whole target, leaving a small amount for dialysate or replacement." },
+            { "label": "120 mL/min", "verdict": "ok", "set": { "bloodFlow": 120 }, "order": "Qb: 120 mL/min", "feedback": "Acceptable: citrate alone roughly meets her target, so no dialysate or replacement is needed. Clearance is then all convective from the citrate." },
+            { "label": "150 mL/min", "verdict": "avoid", "feedback": "Citrate would run at 1500 mL/hr and deliver about 27–28 mL/kg/hr on its own, well above target, before any dialysate. Lower the Qb or use a concentrated citrate." }
+          ] }
+      ],
+      "debrief": "A dilute pre-filter citrate solution sets a minimum dose, because its volume is part of the effluent. In small patients, choose Qb from the dose, not from habit. The alternative is a concentrated citrate, which adds almost no volume."
+    },
+    {
+      "id": "rx-5-bleeding-no-anticoag",
+      "title": "Variceal bleed with liver failure: no anticoagulation",
+      "tag": "none",
+      "patient": { "weightKg": 70, "heightCm": 172, "sex": "male", "hematocrit": 0.24,
+        "defaults": { "modality": "CVVHDF", "anticoag": "none", "citrateConc": 18, "bloodFlow": 200, "netUF": 0, "target": 25, "uptime": 0.85, "weightBasis": "actual" } },
+      "stem": "A 55-year-old man, 70 kg, with decompensated cirrhosis and an active variceal bleed. Shock on norepinephrine and vasopressin, lactate 9 and rising, INR 2.8, platelets 40. Hepatorenal-type AKI with potassium 6.4 and pH 7.12. Haematocrit 0.24.",
+      "decisions": [
+        { "key": "anticoag", "title": "Anticoagulation", "theoryLink": "anticoagulation",
+          "teach": "Citrate needs a liver that can metabolise it. Decompensated cirrhosis with shock and a rising lactate carries a high accumulation risk. Heparin is out with active bleeding.",
+          "options": [
+            { "label": "No anticoagulation", "verdict": "best", "set": { "anticoag": "none" }, "order": "Anticoagulation: none (no heparin in prime per local practice)", "feedback": "Correct for now. Optimise flow and pre-dilution and accept shorter filter life." },
+            { "label": "Regional citrate at a reduced dose", "verdict": "ok", "set": { "anticoag": "citrate" }, "order": "Anticoagulation: regional citrate, reduced dose, ratio 6-hourly", "feedback": "Some units do this with very close calcium-ratio monitoring. With a lactate of 9 and rising, accumulation is likely; most would avoid it until shock resolves." },
+            { "label": "Systemic heparin", "verdict": "avoid", "feedback": "Active bleeding with an INR of 2.8 and platelets of 40." }
+          ] },
+        { "key": "modality", "title": "Modality", "theoryLink": "modality",
+          "teach": "Without anticoagulation, filtration fraction is the main lever for filter life.",
+          "options": [
+            { "label": "CVVHDF with pre-filter replacement", "verdict": "best", "set": { "modality": "CVVHDF" }, "order": "Modality: CVVHDF", "feedback": "Good: dialysate delivers dose without adding to FF, and pre-dilution protects the filter." },
+            { "label": "CVVHD", "verdict": "ok", "set": { "modality": "CVVHD" }, "order": "Modality: CVVHD", "feedback": "Also kind to the filter (almost no ultrafiltration), though without the protective pre-dilution." },
+            { "label": "CVVH", "verdict": "ok", "set": { "modality": "CVVH" }, "order": "Modality: CVVH", "feedback": "Possible, but the whole dose crosses the membrane. Expect to move much of it pre-filter." }
+          ] },
+        { "key": "bloodFlow", "title": "Blood flow", "theoryLink": "circuit", "effect": "bloodFlow",
+          "teach": "Higher Qb lowers FF and shortens the time blood spends in the circuit.",
+          "options": [
+            { "label": "200 mL/min", "verdict": "best", "set": { "bloodFlow": 200 }, "order": "Qb: 200 mL/min", "feedback": "Good for filter life without anticoagulation." },
+            { "label": "150 mL/min", "verdict": "ok", "set": { "bloodFlow": 150 }, "order": "Qb: 150 mL/min", "feedback": "Acceptable; check FF." },
+            { "label": "100 mL/min", "verdict": "avoid", "feedback": "Slow flow and high FF will clot the filter quickly without anticoagulation." }
+          ] }
+      ],
+      "debrief": "Without anticoagulation, prescribe for filter life: higher Qb, a dialysate component, pre-filter replacement, low FF and minimal interruptions. Expect more downtime (15% was used here) and check the delivered dose."
+    }
+  ]
+}

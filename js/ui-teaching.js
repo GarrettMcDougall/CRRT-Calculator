@@ -1,8 +1,14 @@
+/**
+ * ui-teaching.js: Learn tab (guided builder, cases, troubleshooting
+ * simulator, quiz). Buttons that restart a view re-render directly, because
+ * a link to the hash already showing does not fire hashchange.
+ */
 window.CRRTUITeaching = (function () {
   'use strict';
 
-  const Store = window.CRRTStore;
-  let cases = null, quiz = null, troubleshooting = null, theory = null;
+  // Resolved at call time so the module does not depend on script order.
+  const Store = new Proxy({}, { get: (_, k) => window.CRRTStore[k] });
+  let cases = null, quiz = null, troubleshooting = null, theory = null, prescribing = null;
 
   async function ensureData() {
     if (!cases) cases = await Store.loadData('cases');
@@ -18,17 +24,24 @@ window.CRRTUITeaching = (function () {
     await ensureData();
     const caseProgress = Store.get('caseProgress', {});
     const quizStats = Store.get('quizStats', { attempted: 0, correct: 0 });
+    if (!prescribing) prescribing = await Store.loadData('prescribing');
+    const rxDone = Object.keys(Store.get('rxCaseProgress', {})).length;
+    const rxTotal = (prescribing.cases || []).length;
 
     root.innerHTML = `
       <h1>Learn</h1>
-      <p class="muted small">Guided order-building, branching cases, a troubleshooting simulator, and a quiz bank.</p>
+      <p class="muted small">Learn to prescribe, then practise with cases, a troubleshooting simulator and a quiz bank.</p>
       <div class="grid-cols">
         <a href="#/learn/builder" class="card" style="text-decoration:none;color:inherit;display:block;">
           <h3>Guided prescription builder</h3>
-          <p class="small muted">Nine steps from indication to monitoring, with a printable order sheet at the end.</p>
+          <p class="small muted">Learn to prescribe CRRT step by step: each decision with its reasoning, then the dose, effluent, citrate, pre-dilution, replacement split and filtration fraction calculated by hand.</p>
+        </a>
+        <a href="#/learn/prescribing" class="card" style="text-decoration:none;color:inherit;display:block;">
+          <h3>Prescribing cases</h3>
+          <p class="small muted">${rxDone} / ${rxTotal} completed. Clinical vignettes that walk you through writing the prescription.</p>
         </a>
         <a href="#/learn/cases" class="card" style="text-decoration:none;color:inherit;display:block;">
-          <h3>Cases</h3>
+          <h3>Advanced and troubleshooting cases</h3>
           <p class="small muted">${Object.keys(caseProgress).length} / ${cases.length} completed</p>
         </a>
         <a href="#/learn/troubleshoot" class="card" style="text-decoration:none;color:inherit;display:block;">
@@ -44,164 +57,18 @@ window.CRRTUITeaching = (function () {
   }
 
   // =========================================================================
-  // Guided builder
-  // =========================================================================
-  const BUILDER_STEPS = [
-    {
-      key: 'indication', title: 'Is CRRT indicated, and is it indicated now?',
-      theoryLink: 'timing',
-      options: [
-        { label: 'Refractory hyperkalaemia, severe acidosis, diuretic-refractory volume overload, uraemic complications, or select intoxications', order: 'Indication: trigger-based (see selected trigger)', why: 'STARRT-AKI and related trials found no benefit, and even a signal of harm, from initiating by AKI stage alone. Watchful waiting with explicit trigger criteria is the current default.' },
-        { label: 'Rising creatinine / AKI stage alone, no trigger yet', order: 'Indication: AKI stage alone (reconsider)', why: 'This is the pattern the timing trials argue against. Consider watchful waiting with defined trigger criteria instead of acting on stage alone.' },
-      ],
-    },
-    {
-      key: 'crrtVsIhd', title: 'CRRT vs intermittent HD vs PIRRT?',
-      theoryLink: 'modality',
-      options: [
-        { label: 'CRRT: haemodynamically unstable or raised ICP/cerebral oedema', order: 'Modality class: CRRT', why: 'CRRT\'s slow, continuous solute and fluid removal is gentler on haemodynamics and cerebral perfusion than intermittent HD.' },
-        { label: 'Intermittent HD: stable, resource-limited setting', order: 'Modality class: Intermittent HD', why: 'A stable patient without ICP concerns can tolerate the faster shifts of intermittent HD, which is often more resource-efficient.' },
-      ],
-    },
-    {
-      key: 'access', title: 'Access site and catheter',
-      theoryLink: 'circuit',
-      options: [
-        { label: 'Right internal jugular', order: 'Access: Right IJ; catheter length selected for confirmed tip position', why: 'Usually the shortest, straightest route. Choose length from patient anatomy and the catheter product, then confirm tip position.' },
-        { label: 'Femoral', order: 'Access: Femoral; length selected to place the tip in the IVC', why: 'Acceptable when practical. A catheter that is too short increases recirculation, and hip flexion may impair flow.' },
-        { label: 'Left internal jugular', order: 'Access: Left IJ; length selected for confirmed tip position', why: 'Usable, but the longer curved course can impair flow. Avoid a fixed length rule.' },
-      ],
-    },
-    {
-      key: 'modality', title: 'Modality',
-      theoryLink: 'modality',
-      options: [
-        { label: 'CVVHDF: diffusion + convection', order: 'Modality: CVVHDF', why: 'No mortality difference vs CVVH/CVVHD; most units default here as a practical middle ground.' },
-        { label: 'CVVH: convection only', order: 'Modality: CVVH', why: 'Better theoretical middle-molecule clearance at high post-dilution rates, at the cost of filter life.' },
-        { label: 'CVVHD: diffusion only', order: 'Modality: CVVHD', why: 'Gentler on the filter for a given dose than high-rate CVVH.' },
-        { label: 'SCUF: fluid removal only', order: 'Modality: SCUF', why: 'Appropriate only when the sole goal is fluid removal in a metabolically stable patient, with no meaningful solute clearance.' },
-      ],
-    },
-    {
-      key: 'dose', title: 'Dose',
-      theoryLink: 'dose',
-      options: [
-        { label: 'Calculate a prescription that will deliver 20–25 mL/kg/hr', order: 'Dose: target delivered 20–25 mL/kg/hr; calculate prescribed rate from expected uptime and pre-dilution', why: 'A fixed 25–30 rule can underdose or overdose. The calculator solves from the delivered target, expected downtime, and pre-filter dilution.' },
-        { label: 'Prescribe exactly 20–25 mL/kg/hr', order: 'Dose: prescribe 20–25 mL/kg/hr', why: 'Without a downtime margin, delivered dose will likely fall below target once circuit changes and interruptions are accounted for.' },
-      ],
-    },
-    {
-      key: 'anticoag', title: 'Anticoagulation',
-      theoryLink: 'anticoagulation',
-      options: [
-        { label: 'Regional citrate when the protocol and monitoring are suitable', order: 'Anticoagulation: Regional citrate', why: 'KDIGO-preferred default because it improves filter life and reduces bleeding. Severe liver failure or shock raises accumulation risk and requires protocol-specific assessment and close monitoring.' },
-        { label: 'Systemic heparin', order: 'Anticoagulation: Systemic heparin', why: 'Reasonable where citrate is unavailable or contraindicated.' },
-        { label: 'None: active bleeding or high bleeding risk', order: 'Anticoagulation: None (optimise flow/dilution instead)', why: 'The correct default with active bleeding: accept shorter filter life as the trade-off.' },
-      ],
-    },
-    {
-      key: 'fluid', title: 'Fluid removal',
-      theoryLink: 'fluid',
-      options: [
-        { label: 'Set net UF to what current haemodynamics tolerate, reassess frequently', order: 'Fluid removal: net UF titrated to haemodynamic tolerance', why: 'High UF rates risk outpacing plasma refill. Titrate to tolerance in real time rather than fixing a rate to a 24-hour target.' },
-      ],
-    },
-    {
-      key: 'solutions', title: 'Solutions and electrolytes',
-      theoryLink: 'complications',
-      options: [
-        { label: 'Anticipate hypophosphataemia; plan potassium bath and monitoring up front', order: 'Solutions: phosphate-aware plan, K+ bath selected, monitoring scheduled', why: 'Hypophosphataemia is common during CRRT, especially with phosphate-free solutions and longer treatment. Plan monitoring and replacement rather than waiting for a severe value.' },
-      ],
-    },
-    {
-      key: 'monitoring', title: 'Monitoring',
-      theoryLink: 'order-anatomy',
-      options: [
-        { label: 'Set a lab schedule and pressure limits, and specify which parameters are nurse-titrated', order: 'Monitoring: lab schedule + pressure limits + titration parameters specified', why: 'A complete order includes titration boundaries for bedside-titrated parameters (commonly calcium rate, heparin rate), not just a starting point.' },
-      ],
-    },
-  ];
-
-  let builderState = { stepIndex: 0, order: {} };
-
-  async function mountBuilder(root) {
-    await ensureData();
-    builderState = { stepIndex: 0, order: {} };
-    renderBuilder(root);
-  }
-
-  function renderBuilder(root) {
-    const step = BUILDER_STEPS[builderState.stepIndex];
-    const done = builderState.stepIndex >= BUILDER_STEPS.length;
-
-    if (done) {
-      root.innerHTML = `
-        <h1>Guided prescription builder</h1>
-        <div class="card">
-          <h2>Assembled order</h2>
-          <div class="order-sheet">
-            ${BUILDER_STEPS.map(s => `<div class="item"><span class="k">${s.title}</span><span class="v">${builderState.order[s.key] || '–'}</span></div>`).join('')}
-          </div>
-          <div class="mt-4">
-            <button class="secondary" onclick="window.print()">Print order sheet</button>
-            <a href="#/learn/builder"><button class="primary" style="margin-left:0.5rem;">Start over</button></a>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    root.innerHTML = `
-      <h1>Guided prescription builder</h1>
-      <div class="step-progress">
-        ${BUILDER_STEPS.map((s, i) => `<div class="dot ${i < builderState.stepIndex ? 'done' : i === builderState.stepIndex ? 'current' : ''}"></div>`).join('')}
-      </div>
-      <div class="grid-2">
-        <div class="card">
-          <h2>Step ${builderState.stepIndex + 1} of ${BUILDER_STEPS.length}: ${step.title}</h2>
-          <div id="builderOptions">
-            ${step.options.map((o, i) => `<button type="button" class="case-option" data-idx="${i}">${o.label}</button>`).join('')}
-          </div>
-          <div id="builderFeedback"></div>
-        </div>
-        <div class="card order-sheet">
-          <h3>Order sheet so far</h3>
-          ${Object.keys(builderState.order).length === 0 ? '<p class="small muted">Nothing assembled yet.</p>' :
-            BUILDER_STEPS.filter(s => builderState.order[s.key]).map(s => `<div class="item"><span class="k">${s.title}</span><span class="v">${builderState.order[s.key]}</span></div>`).join('')}
-        </div>
-      </div>
-    `;
-
-    root.querySelectorAll('#builderOptions .case-option').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const opt = step.options[parseInt(btn.dataset.idx, 10)];
-        builderState.order[step.key] = opt.order;
-        document.getElementById('builderFeedback').innerHTML = `
-          <div class="feedback-box">
-            <p>${opt.why}</p>
-            <a href="#/theory/${step.theoryLink}" class="small">Read more in Theory →</a>
-            <div class="mt-4"><button class="primary" id="builderNext">Next</button></div>
-          </div>`;
-        document.getElementById('builderNext').addEventListener('click', () => {
-          builderState.stepIndex++;
-          renderBuilder(root);
-        });
-      });
-    });
-  }
-
-  // =========================================================================
   // Cases
   // =========================================================================
   async function mountCasesList(root) {
     await ensureData();
     const progress = Store.get('caseProgress', {});
     root.innerHTML = `
-      <h1>Cases</h1>
+      <h1>Advanced and troubleshooting cases</h1>
+      <p class="small"><a href="#/learn/prescribing">New to prescribing? Start with the prescribing cases →</a></p>
       <div class="grid-cols">
         ${cases.map(c => `
           <a href="#/learn/case/${c.id}" class="card accent-card mod-${c.tag}" style="text-decoration:none;color:inherit;display:block;">
-            <span class="tag">${c.tag === 'none' ? 'no anticoag' : c.tag}</span>
+            <span class="tag">${c.tag === 'none' ? 'no anticoagulation' : c.tag}</span>
             <h3>${c.title}</h3>
             <p class="small muted">${progress[c.id] ? 'Completed' : 'Not started'}</p>
           </a>`).join('')}
@@ -305,7 +172,7 @@ window.CRRTUITeaching = (function () {
     const t = troubleshooting.find(x => x.id === id);
     const zoneMap = {
       'high-access-negative': 'access', 'high-return': 'return', 'rising-tmp': 'filter',
-      'filter-pressure-drop': 'filter', 'air-detected': 'air', 'blood-leak': 'filter',
+      'filter-pressure-drop': 'filter', 'air-detected': 'air', 'blood-leak': 'effluent',
     };
     const svg = window.CRRTSchematic.render({
       qb_mL_min: 150, prefilterActive: false, postfilterActive: true, ff: 0.15,
@@ -321,7 +188,7 @@ window.CRRTUITeaching = (function () {
           <div class="output-block">
             ${Object.entries(t.pressurePattern).map(([k, v]) => `<div class="output-row"><span class="label">${k}</span><span class="value">${v}</span></div>`).join('')}
           </div>` : ''}
-          <details class="working" open>
+          <details class="working">
             <summary>Reveal: what this localises, differential, and first actions</summary>
             <p><strong>${t.localises}</strong></p>
             <p><strong>Differential:</strong></p>
@@ -334,8 +201,9 @@ window.CRRTUITeaching = (function () {
           ${svg}
         </div>
       </div>
-      <a href="#/learn/troubleshoot"><button class="secondary mt-4">Back to list</button></a>
+      <button type="button" class="secondary mt-4" id="troubleshootBack">Back to list</button>
     `;
+    document.getElementById('troubleshootBack').addEventListener('click', () => renderTroubleshootList(root));
   }
 
   // =========================================================================
@@ -369,9 +237,10 @@ window.CRRTUITeaching = (function () {
         <h1>Quiz complete</h1>
         <div class="card">
           <h2>${quizState.score} / ${quizState.order.length}</h2>
-          <a href="#/learn/quiz"><button class="primary">Take again</button></a>
+          <button type="button" class="primary" id="quizRestart">Take again</button>
         </div>
       `;
+      document.getElementById('quizRestart').addEventListener('click', () => mountQuiz(root));
       return;
     }
 
@@ -410,5 +279,5 @@ window.CRRTUITeaching = (function () {
     });
   }
 
-  return { mountHub, mountBuilder, mountCasesList, mountCase, mountTroubleshoot, mountQuiz };
+  return { mountHub, mountCasesList, mountCase, mountTroubleshoot, mountQuiz };
 })();

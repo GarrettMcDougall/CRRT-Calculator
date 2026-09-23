@@ -19,7 +19,8 @@ window.CRRTUITheory = (function () {
 
     if (sectionId) {
       const target = document.getElementById(`theory-${sectionId}`);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Defer until after the router's own scroll handling has run.
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
     }
   }
 

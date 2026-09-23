@@ -21,6 +21,8 @@
 <script src="../js/calc.js"></script>
 <script src="../js/schematic.js"></script>
 <script src="../js/ui-calculator.js"></script>
+<script src="../js/ui-teaching.js"></script>
+<script src="../js/ui-prescribing.js"></script>
 <script>
 (function () {
   const C = window.CRRTCalc;
@@ -314,6 +316,30 @@
   });
   check('R8: 18 mmol/L citrate = 10 x Qb and exact round trip at six blood flows', r8, 0, 0);
 
+  // R9: delivered-dose check from measured effluent (v1.8.0).
+  const R9 = C.deliveredDoseFromEffluent({ effluentVolume_mL: 52000, periodHours: 24, weightKg: 80,
+    dilutionFactor: 0.8, prescribedEffluent_mL_hr: 2600 });
+  check('R9: average effluent = 52 L / 24 h', R9.averageEffluent_mL_hr, 2166.7, 0.1);
+  check('R9: uncorrected delivered = 27.1 mL/kg/hr', R9.deliveredUncorrected_mL_kg_hr, 27.08, 0.01);
+  check('R9: corrected delivered = uncorrected x dilution', R9.deliveredCorrected_mL_kg_hr, 21.67, 0.01);
+  check('R9: effective uptime = 83%', R9.effectiveUptime, 0.833, 0.001);
+  check('R9: invalid input returns valid:false', C.deliveredDoseFromEffluent({ effluentVolume_mL: 0, periodHours: 24, weightKg: 80 }).valid === false ? 1 : 0, 1, 0);
+
+  // R10: teaching method agrees with the engine across the prescribing vignettes.
+  let r10 = 0;
+  [[70, 'citrate', 18, 120, 0.30], [85, 'citrate', 18, 150, 0.28], [95, 'heparin', 18, 200, 0.36], [102.3, 'citrate', 113, 200, 0.32],
+   [70, 'none', 18, 200, 0.24], [150, 'citrate', 113, 200, 0.32]].forEach(([w, a, conc, qb, hct]) => {
+    ['CVVHDF', 'CVVHD'].forEach(m => {
+      const t = C.teachingPrescription({ weightKg: w, anticoag: a, citrateConcentration_mmol_L: conc, bloodFlow_mL_min: qb, hematocrit: hct, modality: m, targetDeliveredDose_mL_kg_hr: 25 });
+      if (Math.abs(t.check.correctedDeliveredDose_mL_kg_hr - 25) > 1) r10++;
+      if (t.check.filtrationFraction > 0.25 + 1e-9) r10++;
+      if ([t.dialysateFlow_mL_hr, t.replacementPre_mL_hr, t.replacementPost_mL_hr].some(f => !Number.isFinite(f) || f < 0)) r10++;
+    });
+  });
+  check('R10: hand method lands within 1 mL/kg/hr of target with FF at or below 25% (CVVHDF, CVVHD)', r10, 0, 0);
+  const R10floor = C.teachingPrescription({ weightKg: 40, hematocrit: 0.25, bloodFlow_mL_min: 150, targetDeliveredDose_mL_kg_hr: 22.5 });
+  check('R10: 40 kg on Regiocit at Qb 150 is flagged as a citrate dose floor', R10floor.floorExceeded ? 1 : 0, 1, 0);
+
   // --- Dosing-weight helper ---
   const L = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'male' });
   check('L: BMI calculation', L.bmi, 37.04, 0.02);
@@ -366,7 +392,13 @@
       fetch('../config/local-protocol.json').then(r => r.json()),
       fetch('../data/solutions.json').then(r => r.json()),
     ]);
-    window.CRRTStore = { loadConfig: async () => cfg, loadData: async () => sol };
+    const dataCache = { solutions: sol };
+    window.CRRTStore = {
+      loadConfig: async () => cfg,
+      loadData: async (name) => dataCache[name] || (dataCache[name] = await fetch('../data/' + name + '.json').then(r => r.json())),
+      get: (k, fallback) => fallback,
+      set: () => {},
+    };
     const root = document.createElement('div');
     root.style.display = 'none';
     document.body.appendChild(root);
@@ -402,7 +434,68 @@
     // U5: degenerate inputs never render NaN or Infinity.
     set('actualWeightKg', 0); set('hematocrit', 1); set('bloodFlow', 0);
     check('U5: no NaN or Infinity rendered with zero weight, Hct 1, Qb 0', /NaN|Infinity/.test(root.textContent) ? 1 : 0, 0, 0);
+
+    // U6: adult-only guard (v1.8.0).
+    set('hematocrit', 0.3); set('bloodFlow', 150);
+    set('actualWeightKg', 25);
+    check('U6: adult-only warning below 30 kg', /designed for adults/.test(root.textContent) ? 1 : 0, 1, 0);
+    set('actualWeightKg', 80);
+    check('U6: no adult-only warning at 80 kg', /designed for adults/.test(root.textContent) ? 1 : 0, 0, 0);
+
+    // U7: prescription summary tracks the settings.
+    set('netUF', 150);
+    check('U7: summary shows the current net UF', /Net UF \(patient fluid removal\): 150 mL\/hr/.test($('rx-summary').textContent) ? 1 : 0, 1, 0);
+
+    // U8: delivered-dose check renders a result.
+    set('obsEffluent', 52);
+    check('U8: delivered-dose check shows a corrected dose', /pre-dilution corrected/.test($('dd-result').textContent) ? 1 : 0, 1, 0);
     root.remove();
+
+    // --- Learn tab navigation: restart buttons must work without a hash change ---
+    const lroot = document.createElement('div');
+    lroot.style.display = 'none';
+    document.body.appendChild(lroot);
+    const T = window.CRRTUITeaching;
+    await T.mountTroubleshoot(lroot);
+    lroot.querySelector('[data-id]').click();
+    check('L1: troubleshooting answer is hidden until revealed', lroot.querySelector('details').open ? 1 : 0, 0, 0);
+    $('troubleshootBack').click();
+    check('L1: Back to list returns to the list', lroot.querySelectorAll('[data-id]').length > 0 ? 1 : 0, 1, 0);
+    // L2: guided builder, preferred path, entering the correct answer at every calculation.
+    const P = window.CRRTUIPrescribing;
+    await P.mountBuilder(lroot);
+    const expected = C.teachingPrescription({ weightKg: 70, hematocrit: 0.30, modality: 'CVVHDF', anticoag: 'citrate',
+      citrateConcentration_mmol_L: 18, citrateDose_mmol_L: 3, bloodFlow_mL_min: 120, targetDeliveredDose_mL_kg_hr: 25, uptimeFraction: 0.9, netUltrafiltration_mL_hr: 0 });
+    const answers = { w: 70, e0: expected.effluentBeforeDilution_mL_hr, cit: expected.citrateFlow_mL_hr, qp: expected.plasmaFlow_mL_hr,
+      df: expected.dilutionFactor, e: expected.effluentTarget_mL_hr, qd: expected.initialSplit.dialysateFlow_mL_hr,
+      pre: expected.initialSplit.replacementPre_mL_hr, post: expected.initialSplit.replacementPost_mL_hr, ff: expected.initialCheck.filtrationFraction * 100 };
+    let l2wrong = 0, l2inputs = 0, l2stuck = 0;
+    for (let i = 0; i < 40; i++) {
+      const opt = lroot.querySelector('[data-opt]:not([disabled])');
+      if (opt && !lroot.querySelector('[data-nav="next"]')) opt.click();
+      if ($('rxCheck')) {
+        lroot.querySelectorAll('input[id^="rx-"]').forEach(inp => { inp.value = String(answers[inp.id.slice(3)]); l2inputs++; });
+        $('rxCheck').click();
+        l2wrong += lroot.querySelectorAll('.rx-bad').length;
+      }
+      if ($('rxOpen')) break;
+      const next = lroot.querySelector('[data-nav="next"]');
+      if (!next) { l2stuck++; break; }
+      next.click();
+    }
+    check('L2: builder reaches the order summary', $('rxOpen') ? 1 : 0, 1, 0);
+    check('L2: all ten hand calculations accepted', l2inputs === 10 && l2wrong === 0 && l2stuck === 0 ? 1 : 0, 1, 0);
+    check('L2: summary delivered dose within 0.5 of the 25 target',
+      Math.abs(parseFloat((lroot.textContent.match(/expected delivered ([\d.]+)/) || [])[1]) - 25), 0, 0.5);
+    $('rxRestart').click();
+    check('L2: builder Start over returns to the beginning', /How this works/.test(lroot.textContent) ? 1 : 0, 1, 0);
+    await T.mountQuiz(lroot);
+    for (let i = 0; i < 60 && lroot.querySelector('#quizOptions .case-option'); i++) {
+      lroot.querySelector('#quizOptions .case-option').click(); $('quizNext').click();
+    }
+    await new Promise(r => { $('quizRestart').click(); setTimeout(r, 50); });
+    check('L3: quiz Take again restarts the quiz', lroot.querySelector('#quizOptions') ? 1 : 0, 1, 0);
+    lroot.remove();
   }
 
   uiTests().catch(e => check('UI tests ran without error: ' + e.message, 0, 1, 0)).finally(renderResults);

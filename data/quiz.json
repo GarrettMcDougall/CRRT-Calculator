@@ -95,7 +95,7 @@
       { "text": "No difference in filter life compared to CVVHD.", "correct": false, "explain": "Filter life is typically shorter with high-rate post-dilution CVVH due to higher filtration fraction." }
     ] },
   { "id": "q20", "topic": "electrolytes", "difficulty": "medium", "question": "Serum sodium 112 mmol/L (chronic), standard CRRT solution sodium 140 mmol/L. What's the concern?", "options": [
-      { "text": "The 28 mmol/L gradient risks correcting sodium too fast, with osmotic demyelination risk.", "correct": true, "explain": "Correct: this gradient exceeds the ~10–12 mmol/L caution threshold and needs specific mitigation before starting." },
+      { "text": "The 28 mmol/L gradient risks correcting sodium too fast, with osmotic demyelination risk.", "correct": true, "explain": "Correct: this gradient is well above the 10 mmol/L gradient this app flags, and needs specific mitigation before starting so the rise stays within 8 mmol/L in 24 hours." },
       { "text": "No specific concern: CRRT solutions are always safe regardless of starting sodium.", "correct": false, "explain": "This is exactly the scenario that needs specific planning (custom low-sodium solution, D5W, or reduced dose) before starting." },
       { "text": "The concern is hyperkalaemia, not sodium correction rate.", "correct": false, "explain": "The stated concern in this scenario is the sodium gradient and correction rate, not potassium." }
     ] },
@@ -110,7 +110,7 @@
       { "text": "Pre-dilution fluid bypasses the filter entirely.", "correct": false, "explain": "Pre-dilution fluid does pass through the filter: it just dilutes the blood before it gets there, rather than bypassing it." }
     ] },
   { "id": "q23", "topic": "circuit", "difficulty": "medium", "question": "Rising TMP with a normal access pressure most directly reflects:", "options": [
-      { "text": "The membrane is clotting or fouling, requiring more pressure to push fluid across.", "correct": true, "explain": "Correct: TMP is derived from filter and effluent pressures and is a filter-life leading indicator." },
+      { "text": "The membrane is clotting or fouling, requiring more pressure to push fluid across.", "correct": true, "explain": "Correct: TMP is derived from filter, return and effluent pressures and is a filter-life leading indicator." },
       { "text": "Inadequate blood pump flow.", "correct": false, "explain": "That would more likely show as an access pressure abnormality, not primarily a TMP rise." },
       { "text": "Air in the circuit.", "correct": false, "explain": "Air entry triggers a dedicated air/bubble alarm, not a gradual TMP rise." }
     ] },

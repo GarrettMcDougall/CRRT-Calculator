@@ -573,7 +573,188 @@
   // Exports
   // ---------------------------------------------------------------------
 
+  /**
+   * Delivered-dose check from what the machine actually removed.
+   *
+   * KDIGO advises checking the delivered dose, not just the prescribed one.
+   * The measured effluent volume already includes downtime, so no uptime
+   * factor is applied. The pre-dilution correction uses the dilution factor
+   * of the current settings, which assumes they were unchanged over the
+   * period.
+   *
+   * @param {number} effluentVolume_mL     total effluent over the period
+   * @param {number} periodHours           length of the period (usually 24)
+   * @param {number} weightKg              dosing weight
+   * @param {number} [dilutionFactor=1]    from computeDoseAndFF for the current settings
+   * @param {number} [prescribedEffluent_mL_hr]  current prescribed effluent rate
+   * @param {number} [runningHours]        hours the circuit actually ran, if known
+   */
+  function deliveredDoseFromEffluent({
+    effluentVolume_mL,
+    periodHours = 24,
+    weightKg,
+    dilutionFactor = 1,
+    prescribedEffluent_mL_hr = null,
+    runningHours = null,
+  }) {
+    const valid = Number.isFinite(effluentVolume_mL) && effluentVolume_mL > 0 &&
+      Number.isFinite(periodHours) && periodHours > 0 &&
+      Number.isFinite(weightKg) && weightKg > 0;
+    if (!valid) return { valid: false };
+    const df = Number.isFinite(dilutionFactor) && dilutionFactor > 0 && dilutionFactor <= 1 ? dilutionFactor : 1;
+    const averageEffluent_mL_hr = effluentVolume_mL / periodHours;
+    const deliveredUncorrected_mL_kg_hr = averageEffluent_mL_hr / weightKg;
+    const deliveredCorrected_mL_kg_hr = deliveredUncorrected_mL_kg_hr * df;
+    const effectiveUptime = Number.isFinite(prescribedEffluent_mL_hr) && prescribedEffluent_mL_hr > 0
+      ? averageEffluent_mL_hr / prescribedEffluent_mL_hr
+      : null;
+    const reportedUptime = Number.isFinite(runningHours) && runningHours > 0 && runningHours <= periodHours
+      ? runningHours / periodHours
+      : null;
+    return {
+      valid: true,
+      averageEffluent_mL_hr,
+      deliveredUncorrected_mL_kg_hr,
+      deliveredCorrected_mL_kg_hr,
+      dilutionFactorUsed: df,
+      effectiveUptime,
+      reportedUptime,
+    };
+  }
+
+  /**
+   * Hand-calculation method for teaching. Returns every intermediate value
+   * so the Learn tab can walk a trainee through the arithmetic one step at a
+   * time. It uses one correction round for pre-dilution (what a clinician
+   * would do on paper) and then checks the result with computeDoseAndFF.
+   * The Prescribe tab's suggestPrescription iterates further and enforces
+   * the FF ceiling, so its flows may differ by a rounding step.
+   *
+   * CVVHDF budget: half dialysate, half replacement. Replacement pre-filter
+   * share: 20% with citrate (the citrate is separate pre-filter fluid), 50%
+   * otherwise.
+   */
+  function teachingPrescription({
+    weightKg,
+    hematocrit = 0.30,
+    modality = 'CVVHDF',
+    anticoag = 'citrate',
+    citrateConcentration_mmol_L = 18,
+    citrateDose_mmol_L = 3,
+    bloodFlow_mL_min = 150,
+    targetDeliveredDose_mL_kg_hr = 25,
+    uptimeFraction = 0.9,
+    netUltrafiltration_mL_hr = 0,
+    ffCeiling = 0.25,
+    ffRedThreshold = 0.30,
+  }) {
+    const round50 = (v) => Math.max(0, Math.round(v / 50) * 50);
+    const citrate = anticoag === 'citrate';
+    const preShare = citrate ? 0.20 : 0.50;
+
+    // 1. Downtime-adjusted effluent, before any pre-dilution correction.
+    const effluentBeforeDilution_mL_hr = (targetDeliveredDose_mL_kg_hr * weightKg) / uptimeFraction;
+
+    // 2. Citrate flow (citrate solution runs pre-filter).
+    const citrateFlow_mL_hr = citrate && citrateConcentration_mmol_L > 0
+      ? (citrateDose_mmol_L * bloodFlow_mL_min * 60) / citrateConcentration_mmol_L
+      : 0;
+
+    // 3. Plasma flow and a first estimate of pre-filter replacement.
+    const plasmaFlow_mL_hr = bloodFlow_mL_min * 60 * (1 - hematocrit);
+    const fixed_mL_hr = netUltrafiltration_mL_hr + citrateFlow_mL_hr;
+    const firstRemainder = effluentBeforeDilution_mL_hr - fixed_mL_hr;
+    const convectiveShare = modality === 'CVVH' ? 1 : modality === 'CVVHDF' ? 0.5 : 0;
+    const preEstimate_mL_hr = round50(Math.max(0, firstRemainder) * convectiveShare * preShare);
+
+    // 4. Dilution factor and corrected effluent target.
+    const preFilterTotal_mL_hr = citrateFlow_mL_hr + preEstimate_mL_hr;
+    const dilutionFactor = plasmaFlow_mL_hr / (plasmaFlow_mL_hr + preFilterTotal_mL_hr);
+    const effluentTarget_mL_hr = effluentBeforeDilution_mL_hr / dilutionFactor;
+
+    // 5. Split what remains after the fixed volumes.
+    const remainder_mL_hr = effluentTarget_mL_hr - fixed_mL_hr;
+    // Under 100 mL/hr left over is not worth ordering: the fixed volumes
+    // (citrate solution and net UF) already provide the dose.
+    const floorExceeded = remainder_mL_hr < 100;
+    let dialysate = 0, pre = 0, post = 0;
+    if (!floorExceeded) {
+      const replacementTotal = remainder_mL_hr * convectiveShare;
+      pre = round50(replacementTotal * preShare);
+      post = round50(replacementTotal - pre);
+      dialysate = modality === 'CVVH' ? 0 : round50(remainder_mL_hr - pre - post);
+    }
+
+    const evaluate = (qd, qpre, qpost) => computeDoseAndFF({
+      weightKg, hematocrit, bloodFlow_mL_min,
+      dialysateFlow_mL_hr: qd,
+      replacementPre_mL_hr: qpre,
+      replacementPost_mL_hr: qpost,
+      netUltrafiltration_mL_hr,
+      citrateFlow_mL_hr,
+      citratePreFilter: true,
+      uptimeFraction,
+      ffCeiling,
+      ffRedThreshold,
+    });
+
+    // 6. First check of filtration fraction.
+    const initial = { dialysateFlow_mL_hr: dialysate, replacementPre_mL_hr: pre, replacementPost_mL_hr: post };
+    const initialCheck = evaluate(dialysate, pre, post);
+
+    // 7. If FF is above the ceiling, fix it the way a clinician would.
+    //    CVVHDF: move post-filter replacement to dialysate (dose unchanged).
+    //    CVVH: move post-filter replacement pre-filter (dose falls a little).
+    let ffAdjustment = null;
+    if (initialCheck.filtrationFraction > ffCeiling && !floorExceeded) {
+      const numeratorWithoutPost = pre + netUltrafiltration_mL_hr + citrateFlow_mL_hr;
+      if (modality === 'CVVHDF') {
+        const postMax = ffCeiling * (plasmaFlow_mL_hr + pre + citrateFlow_mL_hr) - numeratorWithoutPost;
+        const newPost = Math.max(0, Math.floor(postMax / 50) * 50);
+        const shift = post - newPost;
+        dialysate += shift; post = newPost;
+        ffAdjustment = { move_mL_hr: shift, from: 'post-filter replacement', to: 'dialysate', doseEffect: 'none' };
+      } else if (modality === 'CVVH') {
+        const numerator = pre + post + netUltrafiltration_mL_hr + citrateFlow_mL_hr;
+        const needed = numerator / ffCeiling - plasmaFlow_mL_hr - citrateFlow_mL_hr - pre;
+        const shift = Math.min(post, Math.ceil(needed / 50) * 50);
+        pre += shift; post -= shift;
+        ffAdjustment = { move_mL_hr: shift, from: 'post-filter replacement', to: 'pre-filter replacement', doseEffect: 'falls' };
+      }
+    }
+    const check = evaluate(dialysate, pre, post);
+    if (ffAdjustment) {
+      ffAdjustment.ffBefore = initialCheck.filtrationFraction;
+      ffAdjustment.ffAfter = check.filtrationFraction;
+      ffAdjustment.stillAbove = check.filtrationFraction > ffCeiling;
+    }
+
+    return {
+      preShare,
+      effluentBeforeDilution_mL_hr,
+      citrateFlow_mL_hr,
+      plasmaFlow_mL_hr,
+      fixed_mL_hr,
+      preEstimate_mL_hr,
+      preFilterTotal_mL_hr,
+      dilutionFactor,
+      effluentTarget_mL_hr,
+      remainder_mL_hr,
+      floorExceeded,
+      initialSplit: initial,
+      initialCheck,
+      ffAdjustment,
+      dialysateFlow_mL_hr: dialysate,
+      replacementPre_mL_hr: pre,
+      replacementPost_mL_hr: post,
+      check,
+      ffAboveCeiling: check.filtrationFraction > ffCeiling,
+    };
+  }
+
   return {
+    teachingPrescription,
+    deliveredDoseFromEffluent,
     computeDoseAndFF,
     suggestPrescription,
     computeBMIAndAdjustedWeight,
