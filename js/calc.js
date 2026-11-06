@@ -59,6 +59,9 @@
       nonCRRTIntake_mL_hr = 0,
       ffCeiling = 0.25,
       ffRedThreshold = 0.30,
+      // Multiplier on plasma flow in the FF denominator only. 1 by default;
+      // the HHS spreadsheets use 0.95.
+      ffPlasmaFactor = 1,
     } = p;
 
     const citrateAsPreDilution = citratePreFilter ? citrateFlow_mL_hr : 0;
@@ -91,7 +94,7 @@
       replacementPost_mL_hr +
       netUltrafiltration_mL_hr +
       citrateAsPreDilution;
-    const ffDenominator_mL_hr = plasmaFlow_mL_hr + totalPreDilution_mL_hr;
+    const ffDenominator_mL_hr = plasmaFlow_mL_hr * (Number.isFinite(ffPlasmaFactor) && ffPlasmaFactor > 0 ? ffPlasmaFactor : 1) + totalPreDilution_mL_hr;
     const filtrationFraction = ffNumerator_mL_hr / ffDenominator_mL_hr;
 
     // Flags follow the configured protocol ceiling: within it is green,
@@ -574,6 +577,84 @@
   // ---------------------------------------------------------------------
 
   /**
+   * HHS protocol flows, reproducing the institution's two spreadsheets
+   * (CRRT_Dose_Calculator_for_Low_Concentration_Citrate.xlsm and
+   * CRRT_Dose_Calculator_for_No_Anticoagulation_or_Heparin_Anticoagulation.xlsm).
+   *
+   * The target is the PRESCRIBED effluent dose (effluent ÷ weight), with no
+   * pre-dilution or downtime correction, as in the sheets.
+   *
+   * Citrate (CVVHDF): citrate (PBP) = Qb × dose × 60 ÷ conc; post-filter
+   *   fixed; dialysate = ROUND50(max(0, target × W − PBP − post − netUF − infused)).
+   * Heparin / none: X = target × W − netUF − infused;
+   *   CVVHDF pre = ROUND50(X/4), Qd = ROUND50(X/2), post = ROUND50(X/4);
+   *   CVVH   pre = ROUND50(X/2), post = ROUND50(X/2).
+   *   Minimums from the sheet's controls: pre ≥ 100, post ≥ 200.
+   *
+   * Infusions are removed by the machine on top of the net fluid goal, so
+   * machine fluid removal = net UF + infused, and both count in effluent.
+   * FF uses the sheets' formula: (effluent − Qd) ÷ (Qb × 60 × (1 − Hct) × 0.95 + PBP).
+   */
+  function hhsPrescription({
+    protocol,                     // 'citrate' | 'heparin'
+    modality = 'CVVHDF',          // citrate: CVVHDF only; heparin: CVVHDF | CVVH
+    weightKg,
+    hematocrit,
+    bloodFlow_mL_min,
+    targetEffluentDose_mL_kg_hr,
+    citrateDose_mmol_L = 3,
+    citrateConcentration_mmol_L = 18,
+    netUltrafiltration_mL_hr = 0,
+    infused_mL_hr = 0,
+    postFilterFixed_mL_hr = 200,
+    minPre_mL_hr = 100,
+    minPost_mL_hr = 200,
+    ffPlasmaFactor = 0.95,
+  }) {
+    // Excel ROUND(x/50,0)*50 rounds halves away from zero.
+    const round50 = (v) => Math.sign(v) * Math.round(Math.abs(v) / 50) * 50;
+    const W = weightKg, D = targetEffluentDose_mL_kg_hr;
+    const uf = Math.max(0, netUltrafiltration_mL_hr || 0);
+    const inf = Math.max(0, infused_mL_hr || 0);
+    const warnings = [];
+    let citrate = 0, pre = 0, qd = 0, post = 0;
+    if (!(W > 0) || !(D > 0) || !(bloodFlow_mL_min > 0) || !(hematocrit >= 0 && hematocrit < 1)) {
+      warnings.push('Enter a weight, blood flow and target dose above zero and a haematocrit between 0 and 1.');
+    } else if (protocol === 'citrate') {
+      citrate = citrateConcentration_mmol_L > 0 ? (bloodFlow_mL_min * citrateDose_mmol_L * 60) / citrateConcentration_mmol_L : 0;
+      post = postFilterFixed_mL_hr;
+      qd = round50(Math.max(0, D * W - citrate - post - uf - inf));
+      if (D * W - citrate - post - uf - inf < 0) {
+        warnings.push(`Citrate, post-filter replacement${uf || inf ? ', net UF and infusions' : ''} already exceed the ${D} mL/kg/hr effluent target with no dialysate. Lower blood flow or accept the higher dose.`);
+      }
+    } else {
+      const X = D * W - uf - inf;
+      if (modality === 'CVVH') { pre = round50(X / 2); post = round50(X / 2); }
+      else { pre = round50(X / 4); qd = round50(X / 2); post = round50(X / 4); }
+      if (pre < minPre_mL_hr || post < minPost_mL_hr) {
+        warnings.push(`Raised to the protocol minimums (pre-filter ${minPre_mL_hr}, post-filter ${minPost_mL_hr} mL/hr), so effluent is above the target.`);
+      }
+      pre = Math.max(minPre_mL_hr, pre);
+      post = Math.max(minPost_mL_hr, post);
+      qd = Math.max(0, qd);
+    }
+    const effluent_mL_hr = citrate + pre + qd + post + uf + inf;
+    const plasma = bloodFlow_mL_min * 60 * (1 - hematocrit);
+    const filtrationFraction = (effluent_mL_hr - qd) / (plasma * ffPlasmaFactor + citrate + pre);
+    return {
+      citrateFlow_mL_hr: citrate,
+      replacementPre_mL_hr: pre,
+      dialysateFlow_mL_hr: qd,
+      replacementPost_mL_hr: post,
+      machineFluidRemoval_mL_hr: uf + inf,
+      effluent_mL_hr,
+      effluentDose_mL_kg_hr: effluent_mL_hr / W,
+      filtrationFraction,
+      warnings,
+    };
+  }
+
+  /**
    * Hand-calculation method for teaching. Returns every intermediate value
    * so the Learn tab can walk a trainee through the arithmetic one step at a
    * time. It uses one correction round for pre-dilution (what a clinician
@@ -704,6 +785,7 @@
   }
 
   return {
+    hhsPrescription,
     teachingPrescription,
     computeDoseAndFF,
     suggestPrescription,
