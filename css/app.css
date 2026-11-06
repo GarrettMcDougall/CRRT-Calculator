@@ -299,6 +299,12 @@ details.working summary { cursor: pointer; color: var(--citrate); font-weight: 6
 details.working .formula { font-family: var(--font-mono); background: var(--ground); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-sm); margin-top: var(--sp-2); white-space: pre-wrap; }
 
 
+/* ---------- Local protocol (HHS) ---------- */
+.hhs-protocol { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--hairline); }
+.hhs-protocol-label { font-size: var(--fs-small); font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.hhs-banner { font-size: var(--fs-small); line-height: 1.5; background: var(--panel-raised); border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: var(--sp-2) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); align-items: flex-start; }
+.btn-toggle[disabled] { opacity: 0.4; cursor: not-allowed; }
+
 /* ---------- Collapsible cards ---------- */
 details.collapsible > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); }
 details.collapsible > summary::-webkit-details-marker { display: none; }
