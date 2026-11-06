@@ -261,8 +261,8 @@
     "citrate": {
       "citrateProductId": "regiocit",
       "citrateConcentration_mmol_L": 18,
-      "citrateDose_mmol_L": 3.0,
-      "bloodFlow_mL_min": 150,
+      "citrateDose_mmol_L": 2.0,
+      "bloodFlow_mL_min": 120,
       "postFilter_mL_hr": 200,
       "targetEffluentDose_mL_kg_hr": 25,
       "modality": "CVVHDF"
