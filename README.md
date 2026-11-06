@@ -2,7 +2,7 @@
 
 A static, no-build-step web app: a CRRT calculator (regional citrate and systemic heparin), a guided teaching mode, and a high-yield theory reference. Built for GitHub Pages.
 
-**This is an educational tool.  It is not a medical order.** Every solution concentration, titration table, and target range must be verified against your own unit's approved CRRT protocol and pharmacy monographs before this is used for anything beyond personal study.
+**This is an educational tool. It is not a medical order.** Every solution concentration, titration table, and target range must be verified against your own unit's approved CRRT protocol and pharmacy monographs before this is used for anything beyond personal study.
 
 ## Deploying on GitHub Pages
 
