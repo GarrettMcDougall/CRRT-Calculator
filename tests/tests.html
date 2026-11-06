@@ -331,6 +331,31 @@
   const R10floor = C.teachingPrescription({ weightKg: 40, hematocrit: 0.25, bloodFlow_mL_min: 150, targetDeliveredDose_mL_kg_hr: 22.5 });
   check('R10: 40 kg on Regiocit at Qb 150 is flagged as a citrate dose floor', R10floor.floorExceeded ? 1 : 0, 1, 0);
 
+  // H1: HHS protocol reproduces the HHS spreadsheets' saved values exactly.
+  const H1 = C.hhsPrescription({ protocol: 'citrate', weightKg: 65, hematocrit: 0.24, bloodFlow_mL_min: 120,
+    targetEffluentDose_mL_kg_hr: 15, citrateDose_mmol_L: 2, netUltrafiltration_mL_hr: 50, postFilterFixed_mL_hr: 50 });
+  check('H1: citrate sheet PBP 800 mL/hr', H1.citrateFlow_mL_hr, 800, 1e-9);
+  check('H1: citrate sheet dialysate 100 mL/hr', H1.dialysateFlow_mL_hr, 100, 0);
+  check('H1: citrate sheet effluent dose 15.3846', H1.effluentDose_mL_kg_hr, 15.384615, 1e-5);
+  check('H1: citrate sheet FF 0.1500400', H1.filtrationFraction, 0.1500400, 1e-7);
+  const H1h = C.computeDoseAndFF({ weightKg: 70, hematocrit: 0.28, bloodFlow_mL_min: 200, replacementPre_mL_hr: 100,
+    replacementPost_mL_hr: 200, netUltrafiltration_mL_hr: 100, ffPlasmaFactor: 0.95 });
+  check('H1: heparin sheet FF 0.04814636 (custom flows, 100 mL/hr infusions)', H1h.filtrationFraction, 0.04814636, 1e-8);
+
+  // H2: HHS heparin split and minimums.
+  const H2 = C.hhsPrescription({ protocol: 'heparin', modality: 'CVVHDF', weightKg: 80, hematocrit: 0.30,
+    bloodFlow_mL_min: 200, targetEffluentDose_mL_kg_hr: 30 });
+  check('H2: CVVHDF 80 kg x 30: pre 600 / Qd 1200 / post 600',
+    H2.replacementPre_mL_hr === 600 && H2.dialysateFlow_mL_hr === 1200 && H2.replacementPost_mL_hr === 600 ? 1 : 0, 1, 0);
+  const H2b = C.hhsPrescription({ protocol: 'heparin', modality: 'CVVH', weightKg: 80, hematocrit: 0.30,
+    bloodFlow_mL_min: 250, targetEffluentDose_mL_kg_hr: 30, netUltrafiltration_mL_hr: 100, infused_mL_hr: 100 });
+  check('H2: CVVH halves (X = 2400 − 200): pre 1100 / post 1100', H2b.replacementPre_mL_hr === 1100 && H2b.replacementPost_mL_hr === 1100 ? 1 : 0, 1, 0);
+  check('H2: machine fluid removal = net UF + infusions', H2b.machineFluidRemoval_mL_hr, 200, 0);
+  const H2c = C.hhsPrescription({ protocol: 'heparin', modality: 'CVVHDF', weightKg: 30, hematocrit: 0.30,
+    bloodFlow_mL_min: 200, targetEffluentDose_mL_kg_hr: 20, netUltrafiltration_mL_hr: 200 });
+  check('H2: minimums applied (pre 100, post 200) with a warning',
+    H2c.replacementPre_mL_hr === 100 && H2c.replacementPost_mL_hr === 200 && H2c.warnings.length > 0 ? 1 : 0, 1, 0);
+
   // --- Dosing-weight helper ---
   const L = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'male' });
   check('L: BMI calculation', L.bmi, 37.04, 0.02);
@@ -432,6 +457,21 @@
     check('U6: adult-only warning below 30 kg', /designed for adults/.test(root.textContent) ? 1 : 0, 1, 0);
     set('actualWeightKg', 80);
     check('U6: no adult-only warning at 80 kg', /designed for adults/.test(root.textContent) ? 1 : 0, 0, 0);
+
+    // U8: HHS protocol buttons drive the sheet formulas through the real page.
+    root.querySelector('[data-hhs="citrate"]').click();
+    set('actualWeightKg', 80); set('targetDeliveredDose', 25); set('bloodFlow', 150); set('netUF', 0); set('nonCRRTIntake', 0);
+    check('U8: HHS citrate 80 kg x 25 at Qb 150: dialysate 300, post 200',
+      +$('dialysateFlow').value === 300 && +$('replacementPost').value === 200 ? 1 : 0, 1, 0);
+    check('U8: HHS citrate FF shown with the HHS formula (22.7%)', parseFloat($('out-ff').textContent), 22.7, 0.05);
+    root.querySelector('[data-hhs="heparin"]').click();
+    set('actualWeightKg', 80); set('targetDeliveredDose', 30); set('netUF', 100); set('nonCRRTIntake', 100);
+    check('U8: HHS heparin CVVHDF: pre 550 / Qd 1100 / post 550 (X = 2400 − 200)',
+      +$('replacementPre').value === 550 && +$('dialysateFlow').value === 1100 && +$('replacementPost').value === 550 ? 1 : 0, 1, 0);
+    check('U8: HHS effluent includes infusions (2400 mL/hr)', parseFloat($('out-effluent').textContent), 2400, 0.5);
+    $('hhsExit').click();
+    set('netUF', 0); set('nonCRRTIntake', 0);
+    check('U8: exiting HHS restores the delivered-dose target label', /Target delivered dose/.test(root.textContent) ? 1 : 0, 1, 0);
 
     // U7: citrate and solutions panels start collapsed.
     check('U7: citrate and solutions panels are collapsed by default',
