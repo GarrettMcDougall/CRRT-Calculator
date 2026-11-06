@@ -356,6 +356,15 @@
   check('H2: minimums applied (pre 100, post 200) with a warning',
     H2c.replacementPre_mL_hr === 100 && H2c.replacementPost_mL_hr === 200 && H2c.warnings.length > 0 ? 1 : 0, 1, 0);
 
+  // H3: a typed flow keeps its value and the others recalculate (as in the sheets).
+  const H3 = C.hhsPrescription({ protocol: 'citrate', weightKg: 65, hematocrit: 0.24, bloodFlow_mL_min: 120,
+    targetEffluentDose_mL_kg_hr: 15, citrateDose_mmol_L: 2.0, netUltrafiltration_mL_hr: 50, overrides: { post: 50 } });
+  check('H3: citrate saved sheet (post typed 50): Qd re-solves to 100', H3.dialysateFlow_mL_hr, 100, 0);
+  check('H3: citrate saved sheet effluent 1000', H3.effluent_mL_hr, 1000, 0);
+  const H3b = C.hhsPrescription({ protocol: 'heparin', modality: 'CVVHDF', weightKg: 80, hematocrit: 0.30,
+    bloodFlow_mL_min: 200, targetEffluentDose_mL_kg_hr: 30, overrides: { post: 300 } });
+  check('H3: heparin typed post 300 keeps pre 600 / Qd 1200', H3b.replacementPre_mL_hr === 600 && H3b.dialysateFlow_mL_hr === 1200 && H3b.replacementPost_mL_hr === 300 ? 1 : 0, 1, 0);
+
   // --- Dosing-weight helper ---
   const L = C.computeBMIAndAdjustedWeight({ weightKg: 120, heightCm: 180, sex: 'male' });
   check('L: BMI calculation', L.bmi, 37.04, 0.02);
@@ -460,10 +469,16 @@
 
     // U8: HHS protocol buttons drive the sheet formulas through the real page.
     root.querySelector('[data-hhs="citrate"]').click();
-    set('actualWeightKg', 80); set('targetDeliveredDose', 25); set('bloodFlow', 150); set('netUF', 0); set('nonCRRTIntake', 0);
+    check('U8: HHS citrate defaults match the sheet (Qb 120, citrate 2.0 mmol/L)', +$('bloodFlow').value === 120 && +$('citrateTargetDose').value === 2 ? 1 : 0, 1, 0);
+    set('actualWeightKg', 80); set('targetDeliveredDose', 25); set('bloodFlow', 150); set('citrateTargetDose', 3); set('netUF', 0); set('nonCRRTIntake', 0);
     check('U8: HHS citrate 80 kg x 25 at Qb 150: dialysate 300, post 200',
       +$('dialysateFlow').value === 300 && +$('replacementPost').value === 200 ? 1 : 0, 1, 0);
     check('U8: HHS citrate FF shown with the HHS formula (22.7%)', parseFloat($('out-ff').textContent), 22.7, 0.05);
+    set('replacementPost', 50);
+    check('U8: typing post 50 re-solves dialysate to 450 (sheet behaviour)', +$('dialysateFlow').value, 450, 0);
+    set('netUF', 100);
+    check('U8: typed post stays 50 and dialysate keeps recalculating (350)', +$('replacementPost').value === 50 && +$('dialysateFlow').value === 350 ? 1 : 0, 1, 0);
+    set('netUF', 0);
     root.querySelector('[data-hhs="heparin"]').click();
     set('actualWeightKg', 80); set('targetDeliveredDose', 30); set('netUF', 100); set('nonCRRTIntake', 100);
     check('U8: HHS heparin CVVHDF: pre 550 / Qd 1100 / post 550 (X = 2400 − 200)',
