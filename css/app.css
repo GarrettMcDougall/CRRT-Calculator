@@ -468,3 +468,5 @@ input[readonly] { opacity: 0.82; cursor: default; }
   .card { border: 1px solid #999; break-inside: avoid; }
   a { color: black; text-decoration: none; }
 }
+
+.readonly-value { padding: 0.55rem 0.7rem; border: 1px dashed var(--hairline); border-radius: var(--radius-sm); background: var(--panel); font-family: var(--font-mono); font-size: var(--fs-data); color: var(--citrate); }
