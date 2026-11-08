@@ -353,8 +353,8 @@
   check('H2: machine fluid removal = net UF + infusions', H2b.machineFluidRemoval_mL_hr, 200, 0);
   const H2c = C.hhsPrescription({ protocol: 'heparin', modality: 'CVVHDF', weightKg: 30, hematocrit: 0.30,
     bloodFlow_mL_min: 200, targetEffluentDose_mL_kg_hr: 20, netUltrafiltration_mL_hr: 200 });
-  check('H2: minimums applied (pre 100, post 200) with a warning',
-    H2c.replacementPre_mL_hr === 100 && H2c.replacementPost_mL_hr === 200 && H2c.warnings.length > 0 ? 1 : 0, 1, 0);
+  check('H2: button values below the custom minimums are kept (as the sheet) with a warning',
+    H2c.replacementPre_mL_hr === 100 && H2c.replacementPost_mL_hr === 100 && H2c.warnings.length > 0 ? 1 : 0, 1, 0);
 
   // H3: a typed flow keeps its value and the others recalculate (as in the sheets).
   const H3 = C.hhsPrescription({ protocol: 'citrate', weightKg: 65, hematocrit: 0.24, bloodFlow_mL_min: 120,
@@ -484,6 +484,22 @@
     check('U8: HHS heparin CVVHDF: pre 550 / Qd 1100 / post 550 (X = 2400 − 200)',
       +$('replacementPre').value === 550 && +$('dialysateFlow').value === 1100 && +$('replacementPost').value === 550 ? 1 : 0, 1, 0);
     check('U8: HHS effluent includes infusions (2400 mL/hr)', parseFloat($('out-effluent').textContent), 2400, 0.5);
+    // U9: v1.12.0 regressions found against the real workbooks.
+    root.querySelector('[data-hhs="citrate"]').click();
+    set('actualWeightKg', 65); set('hematocrit', 24); set('targetDeliveredDose', 15); set('bloodFlow', 120); set('hhsCitrateDose', 2); set('netUF', 50); set('nonCRRTIntake', 0); set('replacementPost', 50);
+    check('U9: haematocrit 24 read as 24% (saved citrate sheet: effluent 1000, FF 15.0%)', parseFloat($('out-effluent').textContent) === 1000 && parseFloat($('out-ff').textContent) === 15 ? 1 : 0, 1, 0);
+    root.querySelector('[data-hhs="citrate"]').click();
+    check('U9: tapping the active HHS button keeps the protocol and the target', !!root.querySelector('[data-hhs="citrate"].selected') && +$('targetDeliveredDose').value === 15 ? 1 : 0, 1, 0);
+    set('hematocrit', 0.24);
+    root.querySelector('[data-hhs="heparin"]').click();
+    set('actualWeightKg', 40); set('targetDeliveredDose', 25); set('netUF', 300); set('nonCRRTIntake', 200);
+    check('U9: heparin button values not floored (sheet: 150 / 250 / 150)', +$('replacementPre').value === 150 && +$('dialysateFlow').value === 250 && +$('replacementPost').value === 150 ? 1 : 0, 1, 0);
+    $('hhsCustom').click();
+    check('U9: Customize flow rates gives 100 / 0 / 200', +$('replacementPre').value === 100 && +$('dialysateFlow').value === 0 && +$('replacementPost').value === 200 ? 1 : 0, 1, 0);
+    root.querySelector('[data-hhs="citrate"]').click();
+    set('actualWeightKg', 100); set('targetDeliveredDose', 39); set('bloodFlow', 120); set('hhsCitrateDose', 3.2); set('netUF', 90); set('nonCRRTIntake', 85); set('replacementPost', 600);
+    check('U9: dose 39.05 displays 39.1 as Excel does', $('out-prescribed').textContent.trim().startsWith('39.1') ? 1 : 0, 1, 0);
+    set('replacementPost', 200); set('nonCRRTIntake', 0); set('netUF', 0);
     $('hhsExit').click();
     set('netUF', 0); set('nonCRRTIntake', 0);
     check('U8: exiting HHS restores the delivered-dose target label', /Target delivered dose/.test(root.textContent) ? 1 : 0, 1, 0);
