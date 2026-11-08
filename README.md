@@ -33,7 +33,7 @@ Before using this beyond personal study:
 1. Open `config/local-protocol.json`. Every value in it is a generic placeholder. Replace:
    - Dose targets
    - Filtration-fraction limits (`filtrationFraction.ceiling`, default 0.25; `ceilingWithPreFilterCitrate` for dilute pre-filter citrate, default 0.25; `redThreshold`, default 0.30). The generator never exceeds the ceiling, and the FF flag turns amber above it.
-   - HHS protocol defaults (`hhsProtocol`): the two HHS protocol buttons in the Prescribe tab. Citrate: Regiocit 18 mmol/L, citrate dose, blood flow, fixed post-filter replacement, target effluent dose. Heparin: blood flow for CVVHDF and CVVH, target effluent dose, minimum pre- and post-filter flows. `ffPlasmaFactor` (0.95) is the HHS FF formula's plasma-flow factor.
+   - HHS protocol defaults (`hhsProtocol`): the two HHS protocol buttons in the Prescribe tab. Citrate: Regiocit 18 mmol/L, citrate dose, blood flow, fixed post-filter replacement, target effluent dose. Heparin: blood flow for CVVHDF and CVVH, target effluent dose, minimum pre- and post-filter flows. `ffPlasmaFactor` (0.95) is the HHS FF formula's plasma-flow factor. In HHS mode every displayed effluent, dose and FF comes from the sheet formulas (CRRTCalc.hhsPrescription); the HHS citrate protocol always uses 18 mmol/L and turns off if another citrate product is chosen.
    - Citrate solution presets (concentrations vary by product and by site: do not trust the shipped values)
    - The calcium and heparin titration tables: these are placeholder structures, not real nomograms
    - Monitoring lab schedule and pressure limits
