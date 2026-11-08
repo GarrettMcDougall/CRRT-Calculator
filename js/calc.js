@@ -599,10 +599,10 @@
     protocol,                     // 'citrate' | 'heparin'
     modality = 'CVVHDF',          // citrate: CVVHDF only; heparin: CVVHDF | CVVH
     weightKg,
-    hematocrit,
+    hematocrit,                   // fraction (0.24), not percent
     bloodFlow_mL_min,
     targetEffluentDose_mL_kg_hr,
-    citrateDose_mmol_L = 3,
+    citrateDose_mmol_L = 2,
     citrateConcentration_mmol_L = 18,
     netUltrafiltration_mL_hr = 0,
     infused_mL_hr = 0,
@@ -610,37 +610,68 @@
     minPre_mL_hr = 100,
     minPost_mL_hr = 200,
     ffPlasmaFactor = 0.95,
+    // Flows typed by hand, as in the sheets: a typed cell keeps its value and
+    // the other cells keep their formulas (missing = use the formula).
+    overrides = {},
   }) {
     // Excel ROUND(x/50,0)*50 rounds halves away from zero.
-    const round50 = (v) => Math.sign(v) * Math.round(Math.abs(v) / 50) * 50;
+    const round50 = (v) => Math.sign(v) * Math.round(Math.abs(v) / 50 + 1e-9) * 50;
     const W = weightKg, D = targetEffluentDose_mL_kg_hr;
+    const warnings = [];
+    const neg = [];
+    if (netUltrafiltration_mL_hr < 0) neg.push('net fluid removal');
+    if (infused_mL_hr < 0) neg.push('infused fluids');
     const uf = Math.max(0, netUltrafiltration_mL_hr || 0);
     const inf = Math.max(0, infused_mL_hr || 0);
-    const warnings = [];
+    const ov = (k) => (overrides && Number.isFinite(overrides[k]) ? overrides[k] : null);
+    const oPre = ov('pre'), oQd = ov('qd'), oPost = ov('post');
+    [['pre-filter', oPre], ['dialysate', oQd], ['post-filter', oPost]].forEach(([n, v]) => { if (v !== null && v < 0) neg.push(n); });
+    if (neg.length) warnings.push(`Negative ${neg.join(', ')} treated as 0. The spreadsheet does not accept negative values.`);
+    const pos = (v) => Math.max(0, v);
     let citrate = 0, pre = 0, qd = 0, post = 0;
-    if (!(W > 0) || !(D > 0) || !(bloodFlow_mL_min > 0) || !(hematocrit >= 0 && hematocrit < 1)) {
-      warnings.push('Enter a weight, blood flow and target dose above zero and a haematocrit between 0 and 1.');
-    } else if (protocol === 'citrate') {
-      citrate = citrateConcentration_mmol_L > 0 ? (bloodFlow_mL_min * citrateDose_mmol_L * 60) / citrateConcentration_mmol_L : 0;
-      post = postFilterFixed_mL_hr;
-      qd = round50(Math.max(0, D * W - citrate - post - uf - inf));
-      if (D * W - citrate - post - uf - inf < 0) {
-        warnings.push(`Citrate, post-filter replacement${uf || inf ? ', net UF and infusions' : ''} already exceed the ${D} mL/kg/hr effluent target with no dialysate. Lower blood flow or accept the higher dose.`);
+    const valid = W > 0 && D >= 0 && bloodFlow_mL_min > 0 && hematocrit >= 0 && hematocrit < 1;
+    if (!valid) {
+      warnings.push('Enter a weight and blood flow above zero, a target dose, and a haematocrit (0.24 or 24%).');
+    }
+    if (protocol === 'citrate') {
+      // Citrate sheet ("Suggested Citrate Flow Rates"): PBP = BFR x citrate x 60 / 18;
+      // post-filter = 200 unless typed; dialysate C12 = ROUND(MAX(0, dose x wt - PBP - post - UF - infused)/50) x 50.
+      citrate = citrateConcentration_mmol_L > 0 && bloodFlow_mL_min > 0 && citrateDose_mmol_L > 0
+        ? (bloodFlow_mL_min * citrateDose_mmol_L * 60) / citrateConcentration_mmol_L : 0;
+      pre = 0;
+      post = oPost !== null ? pos(oPost) : postFilterFixed_mL_hr;
+      const room = (W > 0 ? D * W : 0) - citrate - post - uf - inf;
+      qd = oQd !== null ? pos(oQd) : round50(Math.max(0, room));
+      if (oQd === null && room < -25) {
+        warnings.push(`Citrate, post-filter replacement${uf || inf ? ', net fluid removal and infusions' : ''} already exceed the ${D} mL/kg/hr target, so dialysate is 0 (as in the sheet). Lower blood flow or citrate dose, or accept the higher dose.`);
       }
     } else {
-      const X = D * W - uf - inf;
-      if (modality === 'CVVH') { pre = round50(X / 2); post = round50(X / 2); }
-      else { pre = round50(X / 4); qd = round50(X / 2); post = round50(X / 4); }
-      if (pre < minPre_mL_hr || post < minPost_mL_hr) {
-        warnings.push(`Raised to the protocol minimums (pre-filter ${minPre_mL_hr}, post-filter ${minPost_mL_hr} mL/hr), so effluent is above the target.`);
+      // Heparin sheet buttons: X = dose x wt - UF - infused.
+      // CVVHDF: pre = R50(X/4), dialysate = R50(X/2), post = R50(X/4). CVVH: pre = post = R50(X/2), dialysate 0.
+      // The button formulas have no floor; the 100/200 minimums are spinner limits for custom flows.
+      const X = (W > 0 ? D * W : 0) - uf - inf;
+      let fPre, fQd, fPost;
+      if (modality === 'CVVH') { fPre = round50(X / 2); fQd = 0; fPost = round50(X / 2); }
+      else { fPre = round50(X / 4); fQd = round50(X / 2); fPost = round50(X / 4); }
+      if (X < 0 && (oPre === null || oQd === null || oPost === null)) {
+        warnings.push('Net fluid removal plus infusions exceed the effluent target. The sheet would show negative flows; they are shown as 0 here.');
       }
-      pre = Math.max(minPre_mL_hr, pre);
-      post = Math.max(minPost_mL_hr, post);
-      qd = Math.max(0, qd);
+      pre = oPre !== null ? pos(oPre) : pos(fPre);
+      qd = modality === 'CVVH' ? 0 : (oQd !== null ? pos(oQd) : pos(fQd));
+      post = oPost !== null ? pos(oPost) : pos(fPost);
+      const low = [];
+      if (pre < minPre_mL_hr) low.push(`pre-filter ${pre} (minimum ${minPre_mL_hr})`);
+      if (post < minPost_mL_hr) low.push(`post-filter ${post} (minimum ${minPost_mL_hr})`);
+      if (low.length) warnings.push(`Below the sheet's minimum for custom flows: ${low.join(', ')} mL/hr. The sheet's suggested-flow button gives the same value; raise it by hand if your protocol requires the minimum.`);
     }
     const effluent_mL_hr = citrate + pre + qd + post + uf + inf;
+    if (effluent_mL_hr >= 10000) warnings.push('Effluent 10,000 mL/hr or more: the sheet flags this as too high.');
     const plasma = bloodFlow_mL_min * 60 * (1 - hematocrit);
-    const filtrationFraction = (effluent_mL_hr - qd) / (plasma * ffPlasmaFactor + citrate + pre);
+    const ffDen = plasma * ffPlasmaFactor + citrate + pre;
+    const filtrationFraction = valid && ffDen > 0 ? (effluent_mL_hr - qd) / ffDen : NaN;
+    // The sheets' "% Pre Filter" rows (different formulas in each sheet).
+    const pctDen = protocol === 'citrate' ? citrate + post + uf + inf : pre + post;
+    const pctPre = pctDen > 0 ? (protocol === 'citrate' ? citrate : pre) / pctDen : NaN;
     return {
       citrateFlow_mL_hr: citrate,
       replacementPre_mL_hr: pre,
@@ -648,8 +679,11 @@
       replacementPost_mL_hr: post,
       machineFluidRemoval_mL_hr: uf + inf,
       effluent_mL_hr,
-      effluentDose_mL_kg_hr: effluent_mL_hr / W,
+      effluentDose_mL_kg_hr: W > 0 ? effluent_mL_hr / W : NaN,
+      doseDeviation_mL_kg_hr: W > 0 ? effluent_mL_hr / W - D : NaN,
       filtrationFraction,
+      percentPreFilter: pctPre,
+      percentPostFilter: Number.isFinite(pctPre) ? 1 - pctPre : NaN,
       warnings,
     };
   }

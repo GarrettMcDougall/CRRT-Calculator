@@ -56,7 +56,9 @@ window.CRRTUICalculator = (function () {
 
     // HHS protocol mode: null | 'citrate' | 'heparin'
     hhs: null,
+    hhsNotice: '',
     hhsFlowsEdited: false,
+    hhsOverrides: {},
 
     // collapsible panels (closed by default; remembered while the page is open)
     ui: { citrateOpen: false, solutionsOpen: false },
@@ -73,11 +75,21 @@ window.CRRTUICalculator = (function () {
     return Number.isFinite(n) ? n : fallback;
   }
 
+  // Haematocrit as a fraction. The HHS sheets take %, so 24 is read as 0.24.
+  function hctFraction() {
+    const v = num(state.hematocrit, NaN);
+    return v > 1 && v <= 100 ? v / 100 : v;
+  }
+
   function fmt(v, digits = 1) {
     // Number.isFinite() also rejects Infinity, which zero weight, zero blood
     // flow, or Hct of 1 would otherwise surface to the user as "Infinity".
     if (v === null || v === undefined || !Number.isFinite(v)) return '–';
-    return v.toFixed(digits);
+    // Round halves away from zero on the decimal value, as Excel displays it
+    // (toFixed shows 39.05 as 39.0 because of binary storage; Excel shows 39.1).
+    const scaled = Number((Number(Math.abs(v).toPrecision(15)) * Math.pow(10, digits)).toPrecision(15));
+    const r = Math.sign(v) * Math.round(scaled) / Math.pow(10, digits);
+    return r.toFixed(digits);
   }
 
   function el(id) { return document.getElementById(id); }
@@ -172,36 +184,47 @@ window.CRRTUICalculator = (function () {
       protocol: state.hhs,
       modality: state.modality,
       weightKg: num(state.weightKg),
-      hematocrit: num(state.hematocrit),
+      hematocrit: hctFraction(),
       bloodFlow_mL_min: num(state.bloodFlow_mL_min),
       targetEffluentDose_mL_kg_hr: num(state.targetDeliveredDose_mL_kg_hr),
-      citrateDose_mmol_L: num(state.citrateTargetDose_mmol_L, cfg.citrate.dose),
-      citrateConcentration_mmol_L: num(state.citrateConcentration_mmol_L, cfg.citrate.conc),
+      citrateDose_mmol_L: num(state.citrateTargetDose_mmol_L, 0),
+      citrateConcentration_mmol_L: cfg.citrate.conc,
       netUltrafiltration_mL_hr: num(state.netUltrafiltration_mL_hr),
       infused_mL_hr: num(state.nonCRRTIntake_mL_hr),
       postFilterFixed_mL_hr: cfg.citrate.post,
       minPre_mL_hr: cfg.heparin.minPre,
       minPost_mL_hr: cfg.heparin.minPost,
       ffPlasmaFactor: cfg.ffPlasmaFactor,
+      overrides: state.hhsOverrides,
     });
   }
 
-  // Write the HHS flows into the prescription unless they were edited by hand.
+  // Write the HHS flows into the prescription. As in the spreadsheets, a flow
+  // typed by hand keeps its value and the others keep recalculating.
   function applyHHSFlows(force = false) {
-    if (!state.hhs || (state.hhsFlowsEdited && !force)) return;
+    if (!state.hhs) return;
+    if (force) { state.hhsOverrides = {}; state.hhsFlowsEdited = false; }
     const r = computeHHS();
     state.dialysateFlow_mL_hr = r.dialysateFlow_mL_hr;
     state.replacementPre_mL_hr = r.replacementPre_mL_hr;
     state.replacementPost_mL_hr = r.replacementPost_mL_hr;
     state.setupGenerated = true;
     state.machineEdited = false;
-    if (force) state.hhsFlowsEdited = false;
+  }
+
+  function hhsFlowTyped(key, stateKey) {
+    const v = num(state[stateKey]);
+    state.hhsOverrides = Object.assign({}, state.hhsOverrides, { [key]: v });
+    state.hhsFlowsEdited = true;
+    applyHHSFlows();
   }
 
   function startHHS(kind) {
     const cfg = hhsCfg();
+    state.hhsNotice = '';
     state.hhs = kind;
     state.hhsFlowsEdited = false;
+    state.hhsOverrides = {};
     if (kind === 'citrate') {
       state.anticoag = 'citrate';
       state.modality = 'CVVHDF';
@@ -224,11 +247,13 @@ window.CRRTUICalculator = (function () {
   function stopHHS() {
     state.hhs = null;
     state.hhsFlowsEdited = false;
+    state.hhsOverrides = {};
     state.setupGenerated = false;
     state.targetDeliveredDose_mL_kg_hr = 22.5;
   }
 
   function getCitrateFlow() {
+    if (state.hhs === 'citrate') return computeHHS().citrateFlow_mL_hr;
     if (!citrateActive()) return 0;
     const conc = num(state.citrateConcentration_mmol_L);
     if (conc <= 0) return 0;
@@ -246,7 +271,7 @@ window.CRRTUICalculator = (function () {
     const noQr = state.modality === 'CVVHD' || state.modality === 'SCUF';
     return {
       weightKg: num(state.weightKg),
-      hematocrit: num(state.hematocrit),
+      hematocrit: hctFraction(),
       bloodFlow_mL_min: num(state.bloodFlow_mL_min),
       dialysateFlow_mL_hr: noQd ? 0 : num(state.dialysateFlow_mL_hr),
       replacementPre_mL_hr: noQr ? 0 : num(state.replacementPre_mL_hr),
@@ -264,7 +289,13 @@ window.CRRTUICalculator = (function () {
   }
 
   function computeDose() {
-    return C.computeDoseAndFF(engineInputs());
+    const d = C.computeDoseAndFF(engineInputs());
+    if (!state.hhs) return d;
+    const r = computeHHS();
+    const { ffCeiling, ffRedThreshold } = ffLimits();
+    const ff = r.filtrationFraction;
+    const ffFlag = !Number.isFinite(ff) || ff < 0 || ff > ffRedThreshold ? 'red' : ff > ffCeiling ? 'amber' : 'green';
+    return Object.assign({}, d, { effluentRate_mL_hr: r.effluent_mL_hr, prescribedDose_mL_kg_hr: r.effluentDose_mL_kg_hr, filtrationFraction: ff, ffFlag, hhs: r });
   }
 
   function computeSuggestion() {
@@ -416,7 +447,8 @@ window.CRRTUICalculator = (function () {
         ${citrate ? renderComposition(citrate, 'Citrate') : '<div class="warning-inline hard">No verified citrate product is listed for this brand and market. Citrate-flow calculation is disabled. Choose the actual citrate supplier or add the locally approved product to the catalogue.</div>'}` : ''}
 
         <div class="generate-btn-wrap">
-          <button type="button" class="primary" id="generatePrescription" ${state.modality === 'SCUF' ? 'disabled' : ''}>${state.hhs ? `Reset to ${hhsCfg().label} flows` : state.setupGenerated ? 'Recalculate flows' : 'Generate starting prescription'}</button>
+          ${state.hhs === 'heparin' ? '<button type="button" class="secondary" id="hhsCustom">Customize flow rates (100 / 0 / 200)</button>' : ''}
+          <button type="button" class="primary" id="generatePrescription" ${state.modality === 'SCUF' ? 'disabled' : ''}>${state.hhs === 'citrate' ? 'Suggested citrate flow rates' : state.hhs === 'heparin' ? `Suggested ${state.modality} flow rates` : state.setupGenerated ? 'Recalculate flows' : 'Generate starting prescription'}</button>
         </div>
       </div>`;
   }
@@ -489,9 +521,10 @@ window.CRRTUICalculator = (function () {
 
         <div class="input-row aligned-row mt-4">
           <div class="field">
-            <label for="hematocrit">Hematocrit <span class="unit">fraction</span></label>
-            <input type="number" id="hematocrit" value="${state.hematocrit}" min="0.1" max="0.6" step="0.01">
-            <div class="field-help">Used to estimate plasma flow and filtration fraction.</div>
+            <label for="hematocrit">Hematocrit <span class="unit">0.24 or 24%</span></label>
+            <input type="number" id="hematocrit" value="${state.hematocrit}" min="0.1" max="60" step="0.01">
+            <div class="field-help">${num(state.hematocrit) > 1 && num(state.hematocrit) <= 100 ? `Read as ${fmt(num(state.hematocrit), 0)}% (${fmt(hctFraction(), 2)}).` : 'Enter as a fraction (0.24) or a percentage (24), as on the HHS sheet. Used for plasma flow and FF.'}</div>
+            ${num(state.hematocrit) > 100 || (state.hematocrit !== '' && num(state.hematocrit) <= 0) ? '<div class="warning-inline hard">Haematocrit not valid. Enter 0.24 or 24.</div>' : ''}
           </div>
           <div class="field">
             <label for="targetDeliveredDose">${state.hhs ? 'Target effluent dose (prescribed)' : 'Target delivered dose'} <span class="unit">mL/kg/hr</span></label>
@@ -512,7 +545,7 @@ window.CRRTUICalculator = (function () {
           ${['CVVHDF', 'CVVHD', 'CVVH', 'SCUF'].map(m => `<button type="button" class="btn-toggle ${state.modality === m ? 'selected' : ''}" data-modality="${m}" ${hhsAllowedModalities().includes(m) ? '' : 'disabled title="Not part of the HHS protocol"'}>${m}</button>`).join('')}
         </div>
 
-        ${state.hhs ? renderHHSSummary() : state.modality === 'SCUF'
+        ${state.hhs ? `<div id="hhs-summary">${renderHHSSummary()}</div>` : state.modality === 'SCUF'
           ? '<div class="warning-inline">SCUF targets fluid removal rather than a delivered small-solute dose. Set net UF in the editable prescription below.</div>'
           : `<div class="setup-summary"><span>Delivered target <strong>${fmt(target)}</strong></span><span>Downtime <strong>${fmt(downtimePercent, 0)}%</strong></span><span>Downtime-only target <strong>${fmt(basePrescribedTarget)} mL/kg/hr</strong></span></div>
              <p class="small muted">The generated flows also correct for citrate and other pre-filter dilution, then round machine flows to 50 mL/hr. ${state.setupGenerated ? `Current generated prediction: ${fmt(suggestion.predictedDeliveredDose_mL_kg_hr)} mL/kg/hr delivered at FF ${fmt(suggestion.predictedFiltrationFraction * 100)}%.` : 'Generate the starting prescription, then edit any machine setting below.'}</p>
@@ -535,9 +568,10 @@ window.CRRTUICalculator = (function () {
             <button type="button" class="btn-toggle mod-citrate ${state.hhs === 'citrate' ? 'selected' : ''}" data-hhs="citrate" aria-pressed="${state.hhs === 'citrate'}">${label}: Regional citrate</button>
             <button type="button" class="btn-toggle mod-heparin ${state.hhs === 'heparin' ? 'selected' : ''}" data-hhs="heparin" aria-pressed="${state.hhs === 'heparin'}">${label}: Heparin</button>
           </div>
+          ${!state.hhs && state.hhsNotice ? `<div class="warning-inline">${state.hhsNotice}</div>` : ''}
           ${state.hhs ? `<div class="hhs-banner">
             <strong>${label} active (${state.hhs === 'citrate' ? 'regional citrate' : 'heparin or no anticoagulation'}).</strong>
-            Flows follow the HHS spreadsheet and update as you change weight, target, blood flow, net UF or infusions. The target is the prescribed effluent dose.
+            Flows follow the HHS spreadsheet and update as you change weight, target, blood flow${state.hhs === 'citrate' ? ', citrate dose' : ''}, net fluid removal or infusions. The target is the effluent dose (effluent ÷ weight), as on the sheet.
             <button type="button" class="secondary" id="hhsExit">Exit ${label}</button>
           </div>` : ''}
         </div>`;
@@ -549,13 +583,13 @@ window.CRRTUICalculator = (function () {
     const i = engineInputs();
     const cfg = hhsCfg();
     const how = state.hhs === 'citrate'
-      ? `Citrate ${fmt(r.citrateFlow_mL_hr, 0)} mL/hr pre-blood pump, post-filter fixed at ${fmt(cfg.citrate.post, 0)} mL/hr, the rest as dialysate.`
+      ? `Citrate ${fmt(r.citrateFlow_mL_hr, 0)} mL/hr pre-blood pump, post-filter ${fmt(r.replacementPost_mL_hr, 0)} mL/hr, the rest as dialysate.`
       : state.modality === 'CVVH'
         ? 'CVVH: half pre-filter (PBP), half post-filter.'
         : 'CVVHDF: 25% pre-filter (PBP), 50% dialysate, 25% post-filter.';
     return `
       <div class="setup-summary"><span>Effluent <strong>${fmt(r.effluent_mL_hr, 0)} mL/hr</strong></span><span>Effluent dose <strong>${fmt(r.effluentDose_mL_kg_hr)}</strong></span><span>FF <strong>${fmt(r.filtrationFraction * 100)}%</strong></span></div>
-      <p class="small muted">${how} Machine fluid removal = net UF + infusions = ${fmt(r.machineFluidRemoval_mL_hr, 0)} mL/hr. Estimated delivered dose after pre-dilution and ${fmt((1 - i.uptimeFraction) * 100, 0)}% downtime: ${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr.${state.hhsFlowsEdited ? ' Flows have been edited by hand.' : ''}</p>
+      <p class="small muted">${how} Machine fluid removal = net UF + infusions = ${fmt(r.machineFluidRemoval_mL_hr, 0)} mL/hr. Estimated delivered dose after pre-dilution and ${fmt((1 - i.uptimeFraction) * 100, 0)}% downtime: ${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr.${state.hhsFlowsEdited ? ` Typed by hand: ${Object.keys(state.hhsOverrides).map(k => ({ qd: 'dialysate', pre: 'pre-filter', post: 'post-filter' })[k]).join(', ')}; the other flows still follow the protocol.` : ''}</p>
       ${r.warnings.map(w => `<div class="warning-inline generator-warning">${w}</div>`).join('')}`;
   }
 
@@ -588,6 +622,14 @@ window.CRRTUICalculator = (function () {
       'out-totaluf': fmt(dose.totalUltrafiltration_mL_hr, 0) + ' mL/hr',
       'out-balance': fmt(dose.estimatedPatientBalance_mL_hr, 0) + ' mL/hr',
       'out-machineuf': fmt(num(state.netUltrafiltration_mL_hr) + num(state.nonCRRTIntake_mL_hr), 0) + ' mL/hr',
+      'out-pbp': fmt(getCitrateFlow(), 0) + ' mL/hr',
+      ...(dose.hhs ? {
+        'out-ff': fmt(dose.filtrationFraction * 100) + '% (sheet shows ' + (Number.isFinite(dose.filtrationFraction) ? Math.round(dose.filtrationFraction * 100 + 1e-9) : '–') + '%) ',
+        'out-deviation': (dose.hhs.doseDeviation_mL_kg_hr > 0 ? '+' : '') + fmt(dose.hhs.doseDeviation_mL_kg_hr) + ' mL/kg/hr',
+        'out-prepost': (Number.isFinite(dose.hhs.percentPreFilter) ? Math.round(dose.hhs.percentPreFilter * 100 + 1e-9) + '% / ' + Math.round(dose.hhs.percentPostFilter * 100 + 1e-9) + '%' : '–'),
+        'out-machineuf': fmt(dose.hhs.machineFluidRemoval_mL_hr, 0) + ' mL/hr',
+        'out-current': fmt(dose.prescribedDose_mL_kg_hr) + ' mL/kg/hr effluent dose',
+      } : {}),
     };
   }
 
@@ -608,11 +650,16 @@ window.CRRTUICalculator = (function () {
     if (dose.prescribedDose_mL_kg_hr > 40) out.push({ hard: true, text: 'Prescribed dose above trial-tested range. RENAL and ATN showed no benefit over 20–25 mL/kg/hr delivered.' });
     if (dose.ffFlag === 'amber') out.push({ hard: false, text: `FF above the ${ceilingPct}% protocol ceiling: increasing haemoconcentration and filter-clotting risk. Consider increasing Qb, shifting replacement pre-filter, or reducing convective flow.` });
     if (dose.ffFlag === 'red') out.push({ hard: true, text: `FF above ${redPct}%: high haemoconcentration risk. Review blood flow and the pre/post replacement split.` });
-    if (state.hhs && state.hhsFlowsEdited) {
+    if (state.hhs === 'citrate') {
+      const cd = num(state.citrateTargetDose_mmol_L, NaN);
+      if (!(cd > 0)) out.push({ hard: true, text: 'Enter a citrate dose (mmol/L). With no dose, PBP citrate is 0.' });
+      else if (cd > 6) out.push({ hard: true, text: `Citrate dose ${fmt(cd)} mmol/L is far above the usual 2–4. Enter the dose in mmol/L (2.0), not the sheet's hidden spinner value (20).` });
+    }
+    if (state.hhs) {
       const target = num(state.targetDeliveredDose_mL_kg_hr);
       const eff = dose.prescribedDose_mL_kg_hr;
       if (target > 0 && Math.abs(eff - target) > 2.5) {
-        out.push({ hard: false, text: `Current settings give an effluent dose of ${fmt(eff)} mL/kg/hr, ${eff < target ? 'below' : 'above'} the ${fmt(target)} mL/kg/hr HHS target. Use Reset to HHS flows to restore the protocol flows.` });
+        out.push({ hard: false, text: `Current settings give an effluent dose of ${fmt(eff)} mL/kg/hr, ${eff < target ? 'below' : 'above'} the ${fmt(target)} mL/kg/hr HHS target. Use the suggested flow rates button to restore the protocol flows.` });
       }
     } else if (!state.hhs && state.modality !== 'SCUF') {
       const target = num(state.targetDeliveredDose_mL_kg_hr);
@@ -637,7 +684,7 @@ window.CRRTUICalculator = (function () {
       ${state.setupGenerated ? `
         <div class="guidance-grid">
           <div class="guidance-item"><strong>${state.hhs ? `${hhsCfg().label} flows for` : 'Generated for'} ${fmt(num(state.weightKg))} kg</strong><span>${state.modality}, ${state.anticoag === 'citrate' ? 'regional citrate' : state.anticoag === 'heparin' ? 'systemic heparin' : 'heparinized circuit only'}.</span></div>
-          <div class="guidance-item"><strong>${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr current</strong><span>Includes ${fmt((1 - i.uptimeFraction) * 100, 0)}% downtime and pre-filter dilution.${state.machineEdited ? ' Machine settings have been edited.' : ''}</span></div>
+          ${state.hhs ? `<div class="guidance-item"><strong id="out-current">${fmt(dose.prescribedDose_mL_kg_hr)} mL/kg/hr effluent dose</strong><span>Effluent ÷ weight, as on the HHS sheet.</span></div>` : `<div class="guidance-item"><strong>${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr current</strong><span>Includes ${fmt((1 - i.uptimeFraction) * 100, 0)}% downtime and pre-filter dilution.${state.machineEdited ? ' Machine settings have been edited.' : ''}</span></div>`}
         </div>` : '<div class="warning-inline">Use Generate starting prescription above to calculate recommended values. Calculations will automatically update with changes to these fields.</div>'}
 
       <div class="input-row aligned-row mt-4">
@@ -650,21 +697,28 @@ window.CRRTUICalculator = (function () {
         <div class="field">
           <label for="dialysateFlow">Dialysate (Qd) <span class="unit">mL/hr</span></label>
           <input type="number" id="dialysateFlow" value="${state.dialysateFlow_mL_hr}" min="0" step="50">
-          <div class="field-help">${state.hhs === 'citrate' ? 'HHS: whatever effluent remains after citrate, post-filter replacement, net UF and infusions.' : state.hhs === 'heparin' ? 'HHS CVVHDF: half of the effluent target (after net UF and infusions).' : 'Suggested by the guided panel from the remaining clearance requirement.'}</div>
+          <div class="field-help">${state.hhs === 'citrate' ? 'HHS: whatever effluent remains after citrate, post-filter replacement, net UF and infusions.' : state.hhs === 'heparin' ? 'HHS button: half of (target × weight − net removal − infusions).' : 'Suggested by the guided panel from the remaining clearance requirement.'}</div>
         </div>` : ''}
       </div>
       ${i.bloodFlow_mL_min > (state.hhs === 'heparin' ? 350 : 250) ? `<div class="warning-inline">Qb above ${state.hhs === 'heparin' ? 350 : 250} mL/min is access-dependent. Confirm catheter and access pressure limits.</div>` : ''}
 
       ${state.modality !== 'CVVHD' && state.modality !== 'SCUF' ? `<div class="input-row aligned-row">
-        <div class="field">
+        ${state.hhs === 'citrate' ? `<div class="field">
+          <label for="hhsCitrateDose">Citrate dose <span class="unit">mmol/L</span></label>
+          <input type="number" id="hhsCitrateDose" value="${state.citrateTargetDose_mmol_L}" min="0" max="6" step="0.1">
+          <div class="field-help">The sheet's "Citrate Concentration". HHS default ${fmt(hhsCfg().citrate.dose)}; adjust per nomogram.</div>
+          <label class="mt-4">Pre blood pump (PBP): citrate</label>
+          <div class="readonly-value" id="out-pbp">${fmt(getCitrateFlow(), 0)} mL/hr</div>
+          <div class="field-help">Qb × citrate dose × 60 ÷ ${fmt(hhsCfg().citrate.conc, 0)}, as on the sheet. Change Qb or citrate dose to change it.</div>
+        </div>` : `<div class="field">
           <label for="replacementPre">${state.hhs ? 'Pre-blood pump (PBP) replacement' : 'Pre-dilution replacement'} <span class="unit">mL/hr</span></label>
           <input type="number" id="replacementPre" value="${state.replacementPre_mL_hr}" min="0" step="50">
-          <div class="field-help">${state.hhs === 'citrate' ? 'Not used in the HHS citrate protocol: Regiocit already runs pre-blood pump.' : state.hhs === 'heparin' ? `HHS: ${state.modality === 'CVVH' ? 'half' : 'a quarter'} of the effluent target, minimum ${hhsCfg().heparin.minPre} mL/hr.` : 'Improves filter rheology and lowers FF, but dilutes solute before the membrane.'}</div>
-        </div>
+          <div class="field-help">${state.hhs === 'heparin' ? `HHS button: ${state.modality === 'CVVH' ? 'half' : 'a quarter'} of (target × weight − net removal − infusions). Sheet minimum for custom flows ${hhsCfg().heparin.minPre} mL/hr.` : 'Improves filter rheology and lowers FF, but dilutes solute before the membrane.'}</div>
+        </div>`}
         <div class="field">
-          <label for="replacementPost">Post-dilution replacement <span class="unit">mL/hr</span></label>
+          <label for="replacementPost">${state.hhs ? 'Post-filter replacement' : 'Post-dilution replacement'} <span class="unit">mL/hr</span></label>
           <input type="number" id="replacementPost" value="${state.replacementPost_mL_hr}" min="0" step="50">
-          <div class="field-help">${state.hhs === 'citrate' ? `HHS: fixed at ${hhsCfg().citrate.post} mL/hr.` : state.hhs === 'heparin' ? `HHS: ${state.modality === 'CVVH' ? 'half' : 'a quarter'} of the effluent target, minimum ${hhsCfg().heparin.minPost} mL/hr.` : 'More clearance-efficient, but increases haemoconcentration when FF rises.'}</div>
+          <div class="field-help">${state.hhs === 'citrate' ? `HHS default ${hhsCfg().citrate.post} mL/hr (the sheet's Suggested citrate flow rates button). If you change it, dialysate recalculates.` : state.hhs === 'heparin' ? `HHS button: ${state.modality === 'CVVH' ? 'half' : 'a quarter'} of (target × weight − net removal − infusions). Sheet minimum for custom flows ${hhsCfg().heparin.minPost} mL/hr.` : 'More clearance-efficient, but increases haemoconcentration when FF rises.'}</div>
         </div>
       </div>` : ''}
 
@@ -681,7 +735,15 @@ window.CRRTUICalculator = (function () {
         </div>
       </div>
 
-      ${(() => { const r = outputRows(dose); return `
+      ${state.hhs ? (() => { const r = outputRows(dose); return `
+      <div class="output-block">
+        <div class="output-row"><span class="label">Total effluent</span><span class="value" id="out-effluent">${r['out-effluent']}</span></div>
+        <div class="output-row"><span class="label">Effluent dose (sheet: "Effluent Dose Delivered")</span><span class="value big" id="out-prescribed">${r['out-prescribed']}</span></div>
+        <div class="output-row"><span class="label">Deviation from dose goal</span><span class="value" id="out-deviation">${r['out-deviation']}</span></div>
+        <div class="output-row"><span class="label">Filtration fraction (HHS formula)</span><span class="value"><span id="out-ff">${r['out-ff']}</span><span class="flag ${dose.ffFlag}" id="out-ff-badge">${dose.ffFlag}</span></span></div>
+        <div class="output-row"><span class="label">% pre-filter / % post-filter (as on the sheet)</span><span class="value" id="out-prepost">${r['out-prepost']}</span></div>
+        <div class="output-row"><span class="label">Machine fluid removal setting (net removal + infusions)</span><span class="value" id="out-machineuf">${r['out-machineuf']}</span></div>
+      </div>`; })() : (() => { const r = outputRows(dose); return `
       <div class="output-block">
         <div class="output-row"><span class="label">Effluent rate</span><span class="value" id="out-effluent">${r['out-effluent']}</span></div>
         <div class="output-row"><span class="label">${state.hhs ? 'Effluent dose (HHS target basis)' : 'Prescribed dose'}</span><span class="value${state.hhs ? ' big' : ''}" id="out-prescribed">${r['out-prescribed']}</span></div>
@@ -694,7 +756,26 @@ window.CRRTUICalculator = (function () {
       </div>`; })()}
       <div id="out-warnings">${renderCurrentWarnings(dose)}</div>
 
-      <details class="working">
+      ${state.hhs ? (() => { const h = dose.hhs; const hf = hctFraction(); return `<details class="working">
+        <summary>Show working (HHS sheet formulas)</summary>
+        <div class="formula">${state.hhs === 'citrate'
+  ? `PBP (citrate) = Qb × citrate dose × 60 ÷ ${fmt(hhsCfg().citrate.conc, 0)}
+ = ${fmt(num(state.bloodFlow_mL_min), 0)} × ${fmt(num(state.citrateTargetDose_mmol_L), 1)} × 60 ÷ ${fmt(hhsCfg().citrate.conc, 0)} = ${fmt(h.citrateFlow_mL_hr, 0)} mL/hr
+dialysate = ROUND50(MAX(0, target × weight − PBP − post − net removal − infusions))${state.hhsOverrides.qd !== undefined ? '  (typed by hand: ' + fmt(h.dialysateFlow_mL_hr, 0) + ')' : `
+ = ROUND50(MAX(0, ${fmt(num(state.targetDeliveredDose_mL_kg_hr))} × ${fmt(num(state.weightKg))} − ${fmt(h.citrateFlow_mL_hr, 0)} − ${fmt(h.replacementPost_mL_hr, 0)} − ${fmt(h.machineFluidRemoval_mL_hr - Math.max(0, num(state.nonCRRTIntake_mL_hr)), 0)} − ${fmt(Math.max(0, num(state.nonCRRTIntake_mL_hr)), 0)})) = ${fmt(h.dialysateFlow_mL_hr, 0)} mL/hr`}`
+  : `X = target × weight − net removal − infusions = ${fmt(num(state.targetDeliveredDose_mL_kg_hr))} × ${fmt(num(state.weightKg))} − ${fmt(Math.max(0, num(state.netUltrafiltration_mL_hr)), 0)} − ${fmt(Math.max(0, num(state.nonCRRTIntake_mL_hr)), 0)}
+${state.modality === 'CVVH' ? 'pre = ROUND50(X/2), post = ROUND50(X/2)' : 'pre = ROUND50(X/4), dialysate = ROUND50(X/2), post = ROUND50(X/4)'}${state.hhsFlowsEdited ? '  (typed by hand: ' + Object.keys(state.hhsOverrides).join(', ') + ')' : ''}
+ → pre ${fmt(h.replacementPre_mL_hr, 0)}, dialysate ${fmt(h.dialysateFlow_mL_hr, 0)}, post ${fmt(h.replacementPost_mL_hr, 0)} mL/hr`}
+
+total effluent = PBP + dialysate + post + net removal + infusions
+ = ${fmt(h.citrateFlow_mL_hr + h.replacementPre_mL_hr, 0)} + ${fmt(h.dialysateFlow_mL_hr, 0)} + ${fmt(h.replacementPost_mL_hr, 0)} + ${fmt(Math.max(0, num(state.netUltrafiltration_mL_hr)), 0)} + ${fmt(Math.max(0, num(state.nonCRRTIntake_mL_hr)), 0)} = ${fmt(h.effluent_mL_hr, 0)} mL/hr
+effluent dose = ${fmt(h.effluent_mL_hr, 0)} ÷ ${fmt(num(state.weightKg))} = ${fmt(h.effluentDose_mL_kg_hr)} mL/kg/hr
+
+FF = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ffPlasmaFactor} + PBP)
+ = (${fmt(h.effluent_mL_hr, 0)} − ${fmt(h.dialysateFlow_mL_hr, 0)}) ÷ (${fmt(num(state.bloodFlow_mL_min), 0)} × 60 × (1 − ${fmt(hf, 2)}) × ${hhsCfg().ffPlasmaFactor} + ${fmt(h.citrateFlow_mL_hr + h.replacementPre_mL_hr, 0)}) = ${fmt(h.filtrationFraction * 100, 2)}%
+
+Not on the sheet: estimated delivered dose after pre-dilution and ${fmt((1 - num(state.uptimeFraction, 0.9)) * 100, 0)}% downtime = ${fmt(dose.correctedDeliveredDose_mL_kg_hr)} mL/kg/hr.</div>
+      </details>`; })() : `<details class="working">
         <summary>Show working</summary>
         <div class="formula">effluent = Qd + replacementPre + replacementPost + netUF (+ citrate if pre-filter)
          = ${fmt(i.dialysateFlow_mL_hr, 0)} + ${fmt(i.replacementPre_mL_hr, 0)} + ${fmt(i.replacementPost_mL_hr, 0)} + ${fmt(i.netUltrafiltration_mL_hr, 0)} + ${fmt(dose.citrateAsPreDilution_mL_hr, 0)}
@@ -715,12 +796,12 @@ FF ceiling in use: ${fmt(i.ffCeiling * 100, 0)}% (config/local-protocol.json)${s
 HHS protocol (${state.hhs}):
 ${state.hhs === 'citrate'
   ? `citrate (PBP) = Qb × citrate dose × 60 ÷ ${fmt(num(state.citrateConcentration_mmol_L), 0)}
-dialysate = ROUND50(target × weight − citrate − post ${fmt(hhsCfg().citrate.post, 0)} − net UF − infusions)`
+dialysate = ROUND50(target × weight − citrate − post ${fmt(num(state.replacementPost_mL_hr), 0)} − net UF − infusions)`
   : `X = target × weight − net UF − infusions
 ${state.modality === 'CVVH' ? 'pre = ROUND50(X/2), post = ROUND50(X/2)' : 'pre = ROUND50(X/4), dialysate = ROUND50(X/2), post = ROUND50(X/4)'}  (minimums: pre ${fmt(hhsCfg().heparin.minPre, 0)}, post ${fmt(hhsCfg().heparin.minPost, 0)})`}
 effluent dose = effluent ÷ weight
 FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ffPlasmaFactor} + pre-filter fluid)` : ''}</div>
-      </details>
+      </details>`}
     </div>`;
   }
 
@@ -790,7 +871,7 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
         <div class="field">
           <label for="citrateTargetDose">Target citrate dose <span class="unit">mmol/L blood</span></label>
           <input type="number" id="citrateTargetDose" value="${state.citrateTargetDose_mmol_L}" min="1" max="6" step="0.1" ${citrateAvailable ? '' : 'disabled'}>
-          <div class="field-help">Suggested starting dose 3.0. A generic range is 3–4, then titrate to post-filter iCa using the local nomogram.</div>
+          <div class="field-help">${state.hhs === 'citrate' ? `HHS default ${fmt(hhsCfg().citrate.dose)}; adjust per the HHS nomogram. Also editable in Step 3.` : 'Suggested starting dose 3.0. A generic range is 3–4, then titrate to post-filter iCa using the local nomogram.'}</div>
         </div>
       </div>
 
@@ -1010,6 +1091,8 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
       });
     }
     const dose = computeDose();
+    const hs = document.getElementById('hhs-summary');
+    if (hs && state.hhs) hs.innerHTML = renderHHSSummary();
     Object.entries(outputRows(dose)).forEach(([id, text]) => {
       const node = document.getElementById(id);
       if (node) node.textContent = text;
@@ -1076,11 +1159,11 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
     bind('hematocrit', 'hematocrit', true, null, setupChanged);
     bind('downtimePercent', 'uptimeFraction', true, v => 1 - Math.min(50, Math.max(0, num(v))) / 100, setupChanged);
     const machineChanged = () => { if (state.hhs) applyHHSFlows(); else if (state.setupGenerated) state.machineEdited = true; };
-    const flowEdited = () => { if (state.hhs) state.hhsFlowsEdited = true; else if (state.setupGenerated) state.machineEdited = true; };
+    const flowEdited = (key, stateKey) => () => { if (state.hhs) hhsFlowTyped(key, stateKey); else if (state.setupGenerated) state.machineEdited = true; };
     bind('bloodFlow', 'bloodFlow_mL_min', true, null, machineChanged);
-    bind('dialysateFlow', 'dialysateFlow_mL_hr', true, null, flowEdited);
-    bind('replacementPre', 'replacementPre_mL_hr', true, null, flowEdited);
-    bind('replacementPost', 'replacementPost_mL_hr', true, null, flowEdited);
+    bind('dialysateFlow', 'dialysateFlow_mL_hr', true, null, flowEdited('qd', 'dialysateFlow_mL_hr'));
+    bind('replacementPre', 'replacementPre_mL_hr', true, null, flowEdited('pre', 'replacementPre_mL_hr'));
+    bind('replacementPost', 'replacementPost_mL_hr', true, null, flowEdited('post', 'replacementPost_mL_hr'));
     bind('netUF', 'netUltrafiltration_mL_hr', true, null, machineChanged);
     bind('nonCRRTIntake', 'nonCRRTIntake_mL_hr', true, null, machineChanged);
     const sex = el('sex');
@@ -1137,9 +1220,18 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
     });
     root.querySelectorAll('[data-hhs]').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (state.hhs === btn.dataset.hhs) stopHHS(); else startHHS(btn.dataset.hhs);
+        // Tapping the active protocol again does nothing; use Exit to leave it.
+        if (state.hhs !== btn.dataset.hhs) startHHS(btn.dataset.hhs);
         render(root);
       });
+    });
+    const hhsCustom = el('hhsCustom');
+    if (hhsCustom) hhsCustom.addEventListener('click', () => {
+      // Heparin sheet "Customize Flow Rates": pre 100, dialysate 0, post 200 as fixed values.
+      state.hhsOverrides = state.modality === 'CVVH' ? { pre: 100, post: 200 } : { pre: 100, qd: 0, post: 200 };
+      state.hhsFlowsEdited = true;
+      applyHHSFlows();
+      render(root);
     });
     const hhsExit = el('hhsExit');
     if (hhsExit) hhsExit.addEventListener('click', () => { stopHHS(); render(root); });
@@ -1148,20 +1240,23 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
     if (marketRegion) marketRegion.addEventListener('change', () => {
       state.marketRegion = marketRegion.value;
       normalizeProductSelections();
-      state.setupGenerated = false;
+      if (state.hhs === 'citrate') { stopHHS(); state.hhsNotice = 'HHS protocol turned off: the market or brand changed, and the HHS citrate sheet is for Regiocit 18 mmol/L only.'; }
+      else if (state.hhs) applyHHSFlows(); else state.setupGenerated = false;
       render(root);
     });
     const solutionBrand = el('solutionBrand');
     if (solutionBrand) solutionBrand.addEventListener('change', () => {
       state.solutionBrand = solutionBrand.value;
       normalizeProductSelections();
-      state.setupGenerated = false;
+      if (state.hhs === 'citrate') { stopHHS(); state.hhsNotice = 'HHS protocol turned off: the market or brand changed, and the HHS citrate sheet is for Regiocit 18 mmol/L only.'; }
+      else if (state.hhs) applyHHSFlows(); else state.setupGenerated = false;
       render(root);
     });
 
     // citrate
-    bind('citrateConc', 'citrateConcentration_mmol_L');
+    bind('citrateConc', 'citrateConcentration_mmol_L', true, null, () => { if (state.hhs === 'citrate' && num(state.citrateConcentration_mmol_L) !== hhsCfg().citrate.conc) { stopHHS(); state.hhsNotice = 'HHS protocol turned off: the HHS citrate sheet uses 18 mmol/L.'; } });
     bind('citrateTargetDose', 'citrateTargetDose_mmol_L', true, null, setupChanged);
+    bind('hhsCitrateDose', 'citrateTargetDose_mmol_L', true, null, setupChanged);
     bind('effluentTotalCa', 'effluentTotalCa_mmol_L');
     bind('totalCa', 'totalCa_mmol_L');
     bind('systemicICa', 'systemicICa_mmol_L');
@@ -1189,7 +1284,8 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
         if (key === 'citrateProductId') {
           state.citrateConcentration_mmol_L = product?.composition?.citrate || 0;
           state.citratePreFilter = true;
-          if (state.hhs) applyHHSFlows(); else state.setupGenerated = false;
+          if (state.hhs === 'citrate' && num(state.citrateConcentration_mmol_L) !== hhsCfg().citrate.conc) { stopHHS(); state.hhsNotice = 'HHS protocol turned off: the HHS citrate sheet is for 18 mmol/L citrate (Regiocit) only.'; }
+          else if (state.hhs) applyHHSFlows(); else state.setupGenerated = false;
         } else if (state.setupGenerated) {
           state.machineEdited = true;
         }
@@ -1225,6 +1321,7 @@ FF (HHS) = (effluent − dialysate) ÷ (Qb × 60 × (1 − Hct) × ${hhsCfg().ff
       machineEdited: false,
       hhs: null,
       hhsFlowsEdited: false,
+      hhsOverrides: {},
     });
     syncDosingWeight();
   }
